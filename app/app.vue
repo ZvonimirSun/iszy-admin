@@ -13,12 +13,12 @@ useHead({
     { rel: 'icon', href: '/favicon.ico' }
   ],
   htmlAttrs: {
-    lang: 'en'
+    lang: 'zh-CN'
   }
 })
 
-const title = 'Nuxt Dashboard Template'
-const description = 'A professional dashboard template built with Nuxt UI, featuring multiple pages, data visualization, and comprehensive management capabilities for creating powerful admin interfaces.'
+const title = 'ISZY Admin'
+const description = '基于 Nuxt UI Dashboard Template 构建的后台管理系统，当前聚焦 RBAC 用户、角色与权限管理。'
 
 useSeoMeta({
   title,
