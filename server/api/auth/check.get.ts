@@ -1,4 +1,4 @@
-import type { PublicUser, ResultDto } from '@zvonimirsun/iszy-common'
+import type { ResultDto } from '@zvonimirsun/iszy-common'
 import type { PublicSimpleUser } from '#shared/types/auth'
 
 export default defineEventHandler(async (event): Promise<ResultDto<{
@@ -17,18 +17,19 @@ export default defineEventHandler(async (event): Promise<ResultDto<{
   }
 
   try {
-    const res = await authFetch<ResultDto<PublicUser>>(event, '/user/me')
-    if (res.success) {
-      return {
-        success: true,
-        data: {
-          logged: true,
-          profile: toPublicSimpleUser(res.data!)
-        },
-        message: '已登录'
-      }
+    const profile = await assertAdminSession(event)
+    return {
+      success: true,
+      data: {
+        logged: true,
+        profile: toPublicSimpleUser(profile)
+      },
+      message: '已登录'
     }
-  } catch {
+  } catch (error) {
+    if ((error as { statusCode?: number }).statusCode === 403) {
+      throw error
+    }
     // fall through to the unauthenticated response below
   }
 

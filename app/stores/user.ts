@@ -1,9 +1,32 @@
 import type { ResultDto } from '@zvonimirsun/iszy-common'
+import { RoleEnum } from '@zvonimirsun/iszy-common'
 import type { PublicSimpleUser } from '#shared/types/auth'
 
 type ProfileFetcher = <T>(request: string, opts?: {
   signal?: AbortSignal
 }) => Promise<T>
+
+function isForbiddenError(error: unknown) {
+  const normalized = error as {
+    status?: number
+    statusCode?: number
+    response?: {
+      status?: number
+    }
+  }
+  return normalized.statusCode === 403 || normalized.status === 403 || normalized.response?.status === 403
+}
+
+function createForbiddenError() {
+  return Object.assign(new Error('仅管理员可以访问后台'), {
+    status: 403,
+    statusCode: 403
+  })
+}
+
+function hasAdminRole(user?: PublicSimpleUser) {
+  return user?.roles?.some(role => role.name === RoleEnum.ADMIN || role.name === RoleEnum.SUPERADMIN) ?? false
+}
 
 export const useUserStore = defineStore('user', () => {
   const profilePulled = ref(false)
@@ -31,6 +54,9 @@ export const useUserStore = defineStore('user', () => {
         if (res.success) {
           profilePulled.value = true
           updateProfile(res.data)
+          if (!hasAdminRole(res.data)) {
+            throw createForbiddenError()
+          }
           return
         }
 
@@ -40,6 +66,9 @@ export const useUserStore = defineStore('user', () => {
         error = '用户名或密码错误'
       }
     } catch (cause) {
+      if (isForbiddenError(cause)) {
+        throw cause
+      }
       removeProfile()
       throw cause
     }
@@ -62,7 +91,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function pullProfile(force = false, fetcher: ProfileFetcher = $fetch) {
     if (profilePulled.value && !force) {
-      return true
+      return logged.value
     }
 
     if (force) {
@@ -95,6 +124,10 @@ export const useUserStore = defineStore('user', () => {
         profilePulled.value = true
         return false
       } catch (error) {
+        if (isForbiddenError(error)) {
+          profilePulled.value = true
+          throw error
+        }
         if ((error as Error).name !== 'AbortError') {
           removeProfile()
           profilePulled.value = true

@@ -34,6 +34,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^9.0.0",
     "@nuxt/eslint": "^1.15.2",
     "@types/ms": "^2.1.0",
     "@types/node": "^25.8.0",

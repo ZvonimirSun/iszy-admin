@@ -5,7 +5,6 @@ definePageMeta({
 
 const userStore = useUserStore()
 const router = useRouter()
-const route = useRoute()
 const toast = useToast()
 
 onMounted(() => {
@@ -17,7 +16,7 @@ onMounted(() => {
       toast.add({ title: '登出失败', description: '请稍后再试', color: 'error' })
     })
     .finally(() => {
-      router.push(!route.redirectedFrom || route.redirectedFrom.path === '/logout' ? '/login' : route.redirectedFrom.path)
+      router.push('/login')
     })
 })
 </script>
