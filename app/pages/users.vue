@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PublicUser, RegisterUser, ResultDto } from '@zvonimirsun/iszy-common'
+import type { PublicUser, RawRole, RegisterUser, ResultDto } from '@zvonimirsun/iszy-common'
 import { UserStatus } from '@zvonimirsun/iszy-common'
 
 const toast = useToast()
@@ -10,6 +10,10 @@ const createOpen = ref(false)
 const deleteOpen = ref(false)
 const deleteLoading = ref(false)
 const userToDelete = ref<PublicUser>()
+const roleOpen = ref(false)
+const roleLoading = ref(false)
+const userToAssignRoles = ref<PublicUser>()
+const selectedRoleIds = ref<number[]>([])
 const pageIndex = ref(1)
 const pageSize = ref(20)
 
@@ -45,8 +49,16 @@ const { data, status, refresh } = await useFetch<ResultDto<PublicUser[]>>('/api/
     data: []
   })
 })
+const { data: rolesResult } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
+  default: () => ({
+    success: true,
+    message: '',
+    data: []
+  })
+})
 
 const users = computed(() => data.value.data ?? [])
+const roles = computed(() => rolesResult.value.data ?? [])
 
 const filteredUsers = computed(() => {
   const keyword = q.value.trim().toLowerCase()
@@ -95,6 +107,45 @@ function requestRemoveUser(user: PublicUser) {
   deleteOpen.value = true
 }
 
+function requestAssignRoles(user: PublicUser) {
+  userToAssignRoles.value = user
+  selectedRoleIds.value = roles.value
+    .filter(role => user.roles?.some(userRole => userRole.name === role.name || userRole.alias === role.alias))
+    .map(role => role.id)
+    .filter((id): id is number => id != null)
+  roleOpen.value = true
+}
+
+async function confirmAssignRoles() {
+  if (!userToAssignRoles.value) {
+    return
+  }
+
+  roleLoading.value = true
+  try {
+    const res = await $fetch<ResultDto<PublicUser>>(`/api/user/${userToAssignRoles.value.userId}/roles`, {
+      method: 'PUT',
+      body: {
+        roleIds: selectedRoleIds.value
+      }
+    })
+
+    toast.add({
+      title: res.success ? '角色已更新' : '更新失败',
+      description: res.message,
+      color: res.success ? 'success' : 'error'
+    })
+
+    if (res.success) {
+      roleOpen.value = false
+      userToAssignRoles.value = undefined
+      await refresh()
+    }
+  } finally {
+    roleLoading.value = false
+  }
+}
+
 async function confirmRemoveUser() {
   if (!userToDelete.value) {
     return
@@ -120,6 +171,21 @@ async function confirmRemoveUser() {
     }
   } finally {
     deleteLoading.value = false
+  }
+}
+
+function toggleSelectedRole(roleId: number | undefined, checked: boolean | 'indeterminate') {
+  if (roleId == null) {
+    return
+  }
+
+  if (checked && !selectedRoleIds.value.includes(roleId)) {
+    selectedRoleIds.value.push(roleId)
+    return
+  }
+
+  if (!checked) {
+    selectedRoleIds.value = selectedRoleIds.value.filter(id => id !== roleId)
   }
 }
 
@@ -331,6 +397,15 @@ function roleLabel(user: PublicUser) {
                         @click="banUser(user)"
                       />
                     </UTooltip>
+                    <UTooltip text="分配角色">
+                      <UButton
+                        icon="i-lucide-shield-plus"
+                        color="neutral"
+                        variant="ghost"
+                        square
+                        @click="requestAssignRoles(user)"
+                      />
+                    </UTooltip>
                     <UTooltip text="删除用户">
                       <UButton
                         icon="i-lucide-trash"
@@ -376,6 +451,49 @@ function roleLabel(user: PublicUser) {
                 icon="i-lucide-trash"
                 :loading="deleteLoading"
                 @click="confirmRemoveUser"
+              />
+            </div>
+          </div>
+        </template>
+      </UModal>
+
+      <UModal
+        v-model:open="roleOpen"
+        title="分配角色"
+        description="调用 PUT /user/:id/roles 替换该用户的完整角色集合。"
+      >
+        <template #body>
+          <div class="space-y-4">
+            <div class="grid gap-2 sm:grid-cols-2">
+              <label
+                v-for="role in roles"
+                :key="role.id || role.name"
+                class="flex cursor-pointer items-start gap-2 rounded-md border border-default p-3"
+              >
+                <UCheckbox
+                  :model-value="selectedRoleIds.includes(role.id!)"
+                  @update:model-value="toggleSelectedRole(role.id, $event)"
+                />
+                <span class="min-w-0">
+                  <span class="block text-sm font-medium text-highlighted">{{ role.alias || role.name }}</span>
+                  <span class="block truncate text-xs text-muted">{{ role.name }}</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <UButton
+                label="取消"
+                color="neutral"
+                variant="subtle"
+                :disabled="roleLoading"
+                @click="roleOpen = false"
+              />
+              <UButton
+                label="保存角色"
+                icon="i-lucide-shield-check"
+                :loading="roleLoading"
+                @click="confirmAssignRoles"
               />
             </div>
           </div>

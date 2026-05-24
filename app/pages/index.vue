@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { PublicUser, ResultDto } from '@zvonimirsun/iszy-common'
+import type { PublicUser, RawPrivilege, RawRole, ResultDto } from '@zvonimirsun/iszy-common'
 import { UserStatus } from '@zvonimirsun/iszy-common'
-import { permissions, roles } from '~/data/rbac'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
 
@@ -16,10 +15,25 @@ const { data: usersResult, status: usersStatus } = await useFetch<ResultDto<Publ
     data: []
   })
 })
+const { data: rolesResult, status: rolesStatus } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
+  default: () => ({
+    success: true,
+    message: '',
+    data: []
+  })
+})
+const { data: privilegesResult, status: privilegesStatus } = await useFetch<ResultDto<RawPrivilege[]>>('/api/privileges', {
+  default: () => ({
+    success: true,
+    message: '',
+    data: []
+  })
+})
 
 const adminUsers = computed(() => usersResult.value.data ?? [])
+const adminRoles = computed(() => rolesResult.value.data ?? [])
+const adminPrivileges = computed(() => privilegesResult.value.data ?? [])
 const activeUsers = computed(() => adminUsers.value.filter(user => user.status === UserStatus.ENABLED).length)
-const highRiskPermissions = computed(() => permissions.filter(permission => permission.risk === 'high').length)
 
 const stats = computed(() => [
   {
@@ -30,15 +44,15 @@ const stats = computed(() => [
   },
   {
     label: '角色数量',
-    value: roles.length,
+    value: rolesStatus.value === 'pending' ? '...' : adminRoles.value.length,
     icon: 'i-lucide-shield-check',
-    description: '已配置核心后台角色'
+    description: '来自 iszy-api 的角色清单'
   },
   {
     label: '权限点',
-    value: permissions.length,
+    value: privilegesStatus.value === 'pending' ? '...' : adminPrivileges.value.length,
     icon: 'i-lucide-key-round',
-    description: `${highRiskPermissions.value} 个高风险权限需谨慎授权`
+    description: '来自 iszy-api 的权限清单'
   }
 ])
 
@@ -99,35 +113,38 @@ const userStatusMeta: Record<UserStatus, { label: string, color: 'success' | 'wa
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <UPageCard
           title="角色授权概览"
-          description="当前使用本地静态数据，后续可替换为角色与权限接口。"
+          description="来自 iszy-api 的角色与权限关系。"
           variant="subtle"
           :ui="{ container: 'p-0 sm:p-0 gap-y-0', header: 'p-4 border-b border-default mb-0' }"
         >
           <div class="divide-y divide-default">
+            <div v-if="rolesStatus === 'pending'" class="p-4 text-sm text-muted">
+              加载角色中...
+            </div>
+            <div v-else-if="!adminRoles.length" class="p-4 text-sm text-muted">
+              暂无角色数据
+            </div>
             <div
-              v-for="role in roles"
-              :key="role.id"
+              v-for="role in adminRoles"
+              :key="role.id || role.name"
               class="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between"
             >
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="font-medium text-highlighted">
-                    {{ role.name }}
+                    {{ role.alias || role.name }}
                   </p>
                   <UBadge color="neutral" variant="subtle">
-                    {{ role.code }}
+                    {{ role.name }}
                   </UBadge>
                 </div>
                 <p class="mt-1 text-sm text-muted">
-                  {{ role.description }}
+                  {{ role.desc || '暂无角色说明' }}
                 </p>
               </div>
               <div class="flex shrink-0 items-center gap-2">
-                <UBadge color="primary" variant="subtle">
-                  {{ role.userCount }} 人
-                </UBadge>
                 <UBadge color="success" variant="subtle">
-                  {{ role.permissionIds.length }} 项权限
+                  {{ role.privileges?.length || 0 }} 项权限
                 </UBadge>
               </div>
             </div>
