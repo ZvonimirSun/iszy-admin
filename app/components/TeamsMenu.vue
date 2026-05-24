@@ -5,21 +5,20 @@ defineProps<{
   collapsed?: boolean
 }>()
 
-const teams = ref([{
-  label: 'ISZY Admin',
+const { title, logo } = usePublicConfig()
+const teamLabel = computed(() => title || '后台管理')
+const selectedTeam = computed(() => ({
+  label: teamLabel.value,
   avatar: {
-    alt: 'ISZY Admin',
+    src: logo || undefined,
+    alt: teamLabel.value,
   },
-}])
-const selectedTeam = ref(teams.value[0])
+}))
 
 const items = computed<DropdownMenuItem[][]>(() => {
-  return [teams.value.map(team => ({
-    ...team,
-    onSelect() {
-      selectedTeam.value = team
-    },
-  })), [{
+  return [[{
+    ...selectedTeam.value,
+  }], [{
     label: '后台配置',
     icon: 'i-lucide-cog',
     to: '/settings',

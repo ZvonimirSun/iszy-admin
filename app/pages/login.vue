@@ -7,7 +7,7 @@ definePageMeta({
   layout: false,
 })
 
-const { features } = usePublicConfig()
+const { features, title } = usePublicConfig()
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
@@ -17,6 +17,7 @@ const redirect = ref('/')
 const otherQuery = ref({})
 const error = ref<string>()
 const loading = ref(false)
+const loginTitle = computed(() => `登录 ${title || '后台管理'}`)
 
 const query = route.query
 if (typeof query.redirect === 'string') {
@@ -117,7 +118,7 @@ function isForbiddenError(error: unknown) {
       <UPageCard class="w-full max-w-md">
         <UAuthForm
           :schema="schema"
-          title="登录 ISZY Admin"
+          :title="loginTitle"
           icon="i-lucide-lock"
           :fields="fields"
           :loading="loading"
