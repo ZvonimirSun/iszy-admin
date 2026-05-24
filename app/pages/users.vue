@@ -22,39 +22,39 @@ const newUser = reactive<RegisterUser>({
   nickName: '',
   passwd: '',
   mobile: '',
-  email: ''
+  email: '',
 })
 
 const statusItems = [
   { label: '全部状态', value: 'all' },
   { label: '待激活', value: UserStatus.DEACTIVATED },
   { label: '启用', value: UserStatus.ENABLED },
-  { label: '停用', value: UserStatus.DISABLED }
+  { label: '停用', value: UserStatus.DISABLED },
 ]
 
 const statusMeta: Record<UserStatus, { label: string, color: 'success' | 'warning' | 'neutral' }> = {
   [UserStatus.DEACTIVATED]: { label: '待激活', color: 'warning' },
   [UserStatus.ENABLED]: { label: '启用', color: 'success' },
-  [UserStatus.DISABLED]: { label: '停用', color: 'neutral' }
+  [UserStatus.DISABLED]: { label: '停用', color: 'neutral' },
 }
 
 const { data, status, refresh } = await useFetch<ResultDto<PublicUser[]>>('/api/user/list', {
   query: {
     pageIndex,
-    pageSize
+    pageSize,
   },
   default: () => ({
     success: true,
     message: '',
-    data: []
-  })
+    data: [],
+  }),
 })
 const { data: rolesResult } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
   default: () => ({
     success: true,
     message: '',
-    data: []
-  })
+    data: [],
+  }),
 })
 
 const users = computed(() => data.value.data ?? [])
@@ -69,7 +69,7 @@ const filteredUsers = computed(() => {
       user.userName,
       user.nickName,
       user.email || '',
-      user.mobile || ''
+      user.mobile || '',
     ].some(value => value.toLowerCase().includes(keyword))
     const matchStatus = statusFilter.value === 'all' || user.status === statusFilter.value
 
@@ -80,7 +80,7 @@ const filteredUsers = computed(() => {
 async function submitCreateUser() {
   const res = await $fetch<ResultDto<PublicUser>>('/api/user', {
     method: 'POST',
-    body: normalizeCreatePayload(newUser)
+    body: normalizeCreatePayload(newUser),
   })
 
   if (!res.success) {
@@ -126,14 +126,14 @@ async function confirmAssignRoles() {
     const res = await $fetch<ResultDto<PublicUser>>(`/api/user/${userToAssignRoles.value.userId}/roles`, {
       method: 'PUT',
       body: {
-        roleIds: selectedRoleIds.value
-      }
+        roleIds: selectedRoleIds.value,
+      },
     })
 
     toast.add({
       title: res.success ? '角色已更新' : '更新失败',
       description: res.message,
-      color: res.success ? 'success' : 'error'
+      color: res.success ? 'success' : 'error',
     })
 
     if (res.success) {
@@ -141,7 +141,8 @@ async function confirmAssignRoles() {
       userToAssignRoles.value = undefined
       await refresh()
     }
-  } finally {
+  }
+  finally {
     roleLoading.value = false
   }
 }
@@ -155,13 +156,13 @@ async function confirmRemoveUser() {
   const user = userToDelete.value
   try {
     const res = await $fetch<ResultDto<boolean>>(`/api/user/${user.userId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     })
 
     toast.add({
       title: res.success ? '用户已删除' : '删除失败',
       description: res.message,
-      color: res.success ? 'success' : 'error'
+      color: res.success ? 'success' : 'error',
     })
 
     if (res.success) {
@@ -169,7 +170,8 @@ async function confirmRemoveUser() {
       userToDelete.value = undefined
       await refresh()
     }
-  } finally {
+  }
+  finally {
     deleteLoading.value = false
   }
 }
@@ -193,14 +195,14 @@ async function updateUserStatus(user: PublicUser, action: 'activate' | 'ban') {
   const res = await $fetch<ResultDto<boolean>>(`/api/user/${action}`, {
     method: 'PUT',
     query: {
-      id: user.userId
-    }
+      id: user.userId,
+    },
   })
 
   toast.add({
     title: res.success ? (action === 'activate' ? '用户已激活' : '用户已禁用') : '操作失败',
     description: res.message,
-    color: res.success ? 'success' : 'error'
+    color: res.success ? 'success' : 'error',
   })
 
   if (res.success) {
@@ -214,7 +216,7 @@ function normalizeCreatePayload(user: RegisterUser) {
     nickName: user.nickName.trim(),
     passwd: user.passwd,
     mobile: user.mobile?.trim() || undefined,
-    email: user.email?.trim() || undefined
+    email: user.email?.trim() || undefined,
   }
 }
 

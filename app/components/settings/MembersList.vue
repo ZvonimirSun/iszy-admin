@@ -6,13 +6,15 @@ defineProps<{
   members: Member[]
 }>()
 
+const toast = useToast()
+
 const items = [{
   label: 'Edit member',
-  onSelect: () => console.log('Edit member')
+  onSelect: () => toast.add({ title: '编辑成员', description: '成员编辑功能尚未接入。' }),
 }, {
   label: 'Remove member',
   color: 'error' as const,
-  onSelect: () => console.log('Remove member')
+  onSelect: () => toast.add({ title: '移除成员', description: '成员移除功能尚未接入。' }),
 }] satisfies DropdownMenuItem[]
 </script>
 

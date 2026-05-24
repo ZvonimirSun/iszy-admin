@@ -23,7 +23,7 @@ export function getSessionKey(sessionId: string): string {
 function setSessionId(id: string, data: Omit<SessionData, 'id'> | SessionData): SessionData {
   return {
     ...data,
-    id
+    id,
   }
 }
 
@@ -76,7 +76,7 @@ export async function setRedisSession(event: H3Event, data?: Omit<SessionData, '
     sameSite: 'lax',
     httpOnly: true,
     secure: true,
-    priority: 'high'
+    priority: 'high',
   })
 }
 
@@ -95,7 +95,7 @@ export async function rotateRedisSession(event: H3Event, data: Omit<SessionData,
     await storage.setItem(
       getSessionKey(oldSessionId),
       { redirectTo: sessionId },
-      { ttl: SESSION_TOMBSTONE_TTL }
+      { ttl: SESSION_TOMBSTONE_TTL },
     )
   }
 
@@ -111,7 +111,7 @@ export function useRedisSession(event: H3Event, session: SessionData) {
     sameSite: 'lax',
     httpOnly: true,
     secure: true,
-    priority: 'high'
+    priority: 'high',
   })
 }
 

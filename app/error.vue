@@ -13,13 +13,13 @@ const returnUrl = computed(() => clientReferrer.value || requestReferrer)
 
 useSeoMeta({
   title: computed(() => isForbidden.value ? '没有权限访问' : '页面不可用'),
-  description: computed(() => isForbidden.value ? '当前账号没有访问后台的权限。' : '当前页面不可用。')
+  description: computed(() => isForbidden.value ? '当前账号没有访问后台的权限。' : '当前页面不可用。'),
 })
 
 useHead({
   htmlAttrs: {
-    lang: 'zh-CN'
-  }
+    lang: 'zh-CN',
+  },
 })
 
 onMounted(() => {

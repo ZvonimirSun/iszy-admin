@@ -4,7 +4,7 @@ import type { LocationQuery } from 'vue-router'
 import * as z from 'zod'
 
 definePageMeta({
-  layout: false
+  layout: false,
 })
 
 const { features } = usePublicConfig()
@@ -28,17 +28,17 @@ const fields: AuthFormField[] = [{
   name: 'userName',
   type: 'text',
   label: '用户名',
-  placeholder: '请输入用户名'
+  placeholder: '请输入用户名',
 }, {
   name: 'password',
   label: '密码',
   type: 'password',
-  placeholder: '请输入密码'
+  placeholder: '请输入密码',
 }]
 
 const schema = z.object({
   userName: z.string().min(1, '请输入用户名'),
-  password: z.string().min(1, '请输入密码')
+  password: z.string().min(1, '请输入密码'),
 })
 
 type Schema = z.output<typeof schema>
@@ -49,12 +49,13 @@ onMounted(async () => {
       toast.add({ title: '已登录', description: '您已经登录，无需再次登录', color: 'info' })
       router.push({ path: redirect.value, query: otherQuery.value })
     }
-  } catch (cause) {
+  }
+  catch (cause) {
     if (isForbiddenError(cause)) {
       showError(createError({
         statusCode: 403,
         statusMessage: '没有权限访问',
-        message: '仅管理员可以访问后台'
+        message: '仅管理员可以访问后台',
       }))
     }
   }
@@ -76,17 +77,19 @@ async function login(payload: FormSubmitEvent<Schema>) {
     await userStore.login(payload.data)
     toast.add({ title: '登录成功', description: '欢迎回来', color: 'success' })
     router.push({ path: redirect.value, query: otherQuery.value })
-  } catch (cause) {
+  }
+  catch (cause) {
     if (isForbiddenError(cause)) {
       showError(createError({
         statusCode: 403,
         statusMessage: '没有权限访问',
-        message: '仅管理员可以访问后台'
+        message: '仅管理员可以访问后台',
       }))
       return
     }
     error.value = cause instanceof Error ? cause.message : '登录失败'
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }

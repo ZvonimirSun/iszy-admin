@@ -26,7 +26,7 @@ export async function proxyFetch(event: H3Event) {
     return fetch(target, {
       method: event.method,
       headers,
-      body
+      body,
     })
   }
 
@@ -34,7 +34,8 @@ export async function proxyFetch(event: H3Event) {
   if (sessionId && res.status === 401) {
     try {
       useRedisSession(event, await refreshWithLock(sessionId, async () => refreshToken(event)))
-    } catch {
+    }
+    catch {
       await destroyRedisSession(event)
       return pipeResponse(event, res)
     }
@@ -49,7 +50,7 @@ export async function authFetch<T = unknown>(event: H3Event, ...params: Paramete
   const [url, opts = {}] = params
   const headers: Record<string, string> = {
     ...getDeviceInfoHeader(event),
-    ...(opts.headers as Record<string, string> | undefined)
+    ...(opts.headers as Record<string, string> | undefined),
   }
 
   opts.headers = headers
@@ -67,12 +68,14 @@ export async function authFetch<T = unknown>(event: H3Event, ...params: Paramete
 
   try {
     return await doRequest()
-  } catch (error) {
+  }
+  catch (error) {
     if (sessionId && (error as FetchError)?.response?.status === 401) {
       try {
         useRedisSession(event, await refreshWithLock(sessionId, async () => refreshToken(event)))
         return doRequest()
-      } catch {
+      }
+      catch {
         await destroyRedisSession(event)
         throw error
       }
@@ -96,8 +99,8 @@ async function refreshToken(event: H3Event): Promise<SessionData> {
     method: 'POST',
     headers: {
       ...getDeviceInfoHeader(event),
-      Authorization: `Bearer ${sessionData.refresh_token}`
-    }
+      Authorization: `Bearer ${sessionData.refresh_token}`,
+    },
   })
 
   if (!res.success) {
@@ -106,7 +109,7 @@ async function refreshToken(event: H3Event): Promise<SessionData> {
 
   return rotateRedisSession(event, {
     access_token: res.data!.access_token,
-    refresh_token: res.data!.refresh_token
+    refresh_token: res.data!.refresh_token,
   })
 }
 
@@ -120,7 +123,8 @@ async function refreshWithLock(sessionId: string, fn: () => Promise<SessionData>
   const promise = (async () => {
     try {
       return await fn()
-    } finally {
+    }
+    finally {
       locks.delete(sessionId)
     }
   })()
@@ -137,7 +141,7 @@ function getDeviceInfoHeader(event: H3Event) {
 
   const headers: Partial<Record<HTTPHeaderName, string>> = {
     'x-forwarded-for': xForwardedFor,
-    'x-real-ip': remoteAddr
+    'x-real-ip': remoteAddr,
   }
   if (ua) {
     headers['user-agent'] = ua

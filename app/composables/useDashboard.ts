@@ -1,6 +1,6 @@
 import { createSharedComposable } from '@vueuse/core'
 
-const _useDashboard = () => {
+function _useDashboard() {
   const route = useRoute()
   const router = useRouter()
   const isNotificationsSlideoverOpen = ref(false)
@@ -11,7 +11,7 @@ const _useDashboard = () => {
     'g-r': () => router.push('/roles'),
     'g-p': () => router.push('/permissions'),
     'g-s': () => router.push('/settings'),
-    'n': () => isNotificationsSlideoverOpen.value = !isNotificationsSlideoverOpen.value
+    'n': () => isNotificationsSlideoverOpen.value = !isNotificationsSlideoverOpen.value,
   })
 
   watch(() => route.fullPath, () => {
@@ -19,7 +19,7 @@ const _useDashboard = () => {
   })
 
   return {
-    isNotificationsSlideoverOpen
+    isNotificationsSlideoverOpen,
   }
 }
 

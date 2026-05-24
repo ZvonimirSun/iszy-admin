@@ -8,8 +8,8 @@ defineProps<{
 const teams = ref([{
   label: 'ISZY Admin',
   avatar: {
-    alt: 'ISZY Admin'
-  }
+    alt: 'ISZY Admin',
+  },
 }])
 const selectedTeam = ref(teams.value[0])
 
@@ -18,11 +18,11 @@ const items = computed<DropdownMenuItem[][]>(() => {
     ...team,
     onSelect() {
       selectedTeam.value = team
-    }
+    },
   })), [{
     label: '后台配置',
     icon: 'i-lucide-cog',
-    to: '/settings'
+    to: '/settings',
   }]]
 })
 </script>
@@ -37,7 +37,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       v-bind="{
         ...selectedTeam,
         label: collapsed ? undefined : selectedTeam?.label,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
+        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
       }"
       color="neutral"
       variant="ghost"
@@ -46,7 +46,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       class="data-[state=open]:bg-elevated"
       :class="[!collapsed && 'py-2']"
       :ui="{
-        trailingIcon: 'text-dimmed'
+        trailingIcon: 'text-dimmed',
       }"
     />
   </UDropdownMenu>

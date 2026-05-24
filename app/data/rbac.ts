@@ -42,7 +42,7 @@ export const permissions: AdminPermission[] = [
     resource: '用户',
     action: '查看',
     description: '查看用户列表、用户详情与基础资料',
-    risk: 'low'
+    risk: 'low',
   },
   {
     id: 'perm-user-write',
@@ -52,7 +52,7 @@ export const permissions: AdminPermission[] = [
     resource: '用户',
     action: '编辑',
     description: '创建用户、编辑资料、调整状态',
-    risk: 'medium'
+    risk: 'medium',
   },
   {
     id: 'perm-role-read',
@@ -62,7 +62,7 @@ export const permissions: AdminPermission[] = [
     resource: '角色',
     action: '查看',
     description: '查看角色列表、角色详情与成员数量',
-    risk: 'low'
+    risk: 'low',
   },
   {
     id: 'perm-role-write',
@@ -72,7 +72,7 @@ export const permissions: AdminPermission[] = [
     resource: '角色',
     action: '编辑',
     description: '创建角色、编辑角色说明、调整绑定权限',
-    risk: 'high'
+    risk: 'high',
   },
   {
     id: 'perm-permission-read',
@@ -82,7 +82,7 @@ export const permissions: AdminPermission[] = [
     resource: '权限',
     action: '查看',
     description: '查看权限清单、权限编码和资源动作',
-    risk: 'low'
+    risk: 'low',
   },
   {
     id: 'perm-permission-write',
@@ -92,7 +92,7 @@ export const permissions: AdminPermission[] = [
     resource: '权限',
     action: '编辑',
     description: '新增权限点、调整权限说明和风险等级',
-    risk: 'high'
+    risk: 'high',
   },
   {
     id: 'perm-audit-read',
@@ -102,8 +102,8 @@ export const permissions: AdminPermission[] = [
     resource: '审计',
     action: '查看',
     description: '查看后台操作日志与权限变更记录',
-    risk: 'medium'
-  }
+    risk: 'medium',
+  },
 ]
 
 export const roles: AdminRole[] = [
@@ -115,7 +115,7 @@ export const roles: AdminRole[] = [
     description: '拥有后台全部管理权限，负责系统配置与高风险操作审批',
     userCount: 2,
     permissionIds: permissions.map(permission => permission.id),
-    updatedAt: '2026-05-20 14:30'
+    updatedAt: '2026-05-20 14:30',
   },
   {
     id: 'role-ops-admin',
@@ -125,7 +125,7 @@ export const roles: AdminRole[] = [
     description: '负责用户日常管理、角色查询和基础运营处理',
     userCount: 8,
     permissionIds: ['perm-user-read', 'perm-user-write', 'perm-role-read', 'perm-permission-read'],
-    updatedAt: '2026-05-22 09:18'
+    updatedAt: '2026-05-22 09:18',
   },
   {
     id: 'role-auditor',
@@ -135,8 +135,8 @@ export const roles: AdminRole[] = [
     description: '只读查看用户、角色、权限和审计日志，不能修改业务数据',
     userCount: 4,
     permissionIds: ['perm-user-read', 'perm-role-read', 'perm-permission-read', 'perm-audit-read'],
-    updatedAt: '2026-05-21 17:05'
-  }
+    updatedAt: '2026-05-21 17:05',
+  },
 ]
 
 export const users: AdminUser[] = [
@@ -147,7 +147,7 @@ export const users: AdminUser[] = [
     department: '平台运营部',
     status: 'active',
     roleIds: ['role-super-admin'],
-    lastLoginAt: '2026-05-24 09:12'
+    lastLoginAt: '2026-05-24 09:12',
   },
   {
     id: 'U-10002',
@@ -156,7 +156,7 @@ export const users: AdminUser[] = [
     department: '客户成功部',
     status: 'active',
     roleIds: ['role-ops-admin'],
-    lastLoginAt: '2026-05-23 18:44'
+    lastLoginAt: '2026-05-23 18:44',
   },
   {
     id: 'U-10003',
@@ -165,7 +165,7 @@ export const users: AdminUser[] = [
     department: '风控合规部',
     status: 'active',
     roleIds: ['role-auditor'],
-    lastLoginAt: '2026-05-22 11:20'
+    lastLoginAt: '2026-05-22 11:20',
   },
   {
     id: 'U-10004',
@@ -174,7 +174,7 @@ export const users: AdminUser[] = [
     department: '平台运营部',
     status: 'pending',
     roleIds: ['role-ops-admin'],
-    lastLoginAt: '等待首次登录'
+    lastLoginAt: '等待首次登录',
   },
   {
     id: 'U-10005',
@@ -183,20 +183,20 @@ export const users: AdminUser[] = [
     department: '财务部',
     status: 'disabled',
     roleIds: ['role-auditor'],
-    lastLoginAt: '2026-05-08 15:27'
-  }
+    lastLoginAt: '2026-05-08 15:27',
+  },
 ]
 
 export const statusMeta: Record<AdminUserStatus, { label: string, color: 'success' | 'warning' | 'neutral' }> = {
   active: { label: '启用', color: 'success' },
   pending: { label: '待激活', color: 'warning' },
-  disabled: { label: '停用', color: 'neutral' }
+  disabled: { label: '停用', color: 'neutral' },
 }
 
 export const riskMeta: Record<PermissionRisk, { label: string, color: 'success' | 'warning' | 'error' }> = {
   low: { label: '低风险', color: 'success' },
   medium: { label: '中风险', color: 'warning' },
-  high: { label: '高风险', color: 'error' }
+  high: { label: '高风险', color: 'error' },
 }
 
 export function getRoleName(roleId: string) {

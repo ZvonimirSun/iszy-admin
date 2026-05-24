@@ -10,7 +10,7 @@ export default defineEventHandler(async (event): Promise<ResultDto<PublicSimpleU
   if (!body.userName || !body.password) {
     throw createError({
       statusCode: 400,
-      message: '用户名和密码不能为空'
+      message: '用户名和密码不能为空',
     })
   }
 
@@ -23,26 +23,27 @@ export default defineEventHandler(async (event): Promise<ResultDto<PublicSimpleU
       method: 'POST',
       body: {
         username: body.userName.trim(),
-        password: body.password
-      }
+        password: body.password,
+      },
     })
 
     if (res.success) {
       await setRedisSession(event, {
         access_token: res.data!.access_token,
-        refresh_token: res.data!.refresh_token
+        refresh_token: res.data!.refresh_token,
       })
     }
 
     return {
       ...res,
-      data: res.data?.profile ? toPublicSimpleUser(res.data.profile) : undefined
+      data: res.data?.profile ? toPublicSimpleUser(res.data.profile) : undefined,
     }
-  } catch {
+  }
+  catch {
     await destroyRedisSession(event)
     return {
       success: false,
-      message: '登录失败'
+      message: '登录失败',
     }
   }
 })

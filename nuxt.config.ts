@@ -4,11 +4,11 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/eslint',
     '@pinia/nuxt',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
   ],
 
   devtools: {
-    enabled: true
+    enabled: true,
   },
 
   css: ['~/assets/css/main.css'],
@@ -16,26 +16,26 @@ export default defineNuxtConfig({
     public: {
       apiOrigin: '',
       features: {
-        publicRegister: false
-      }
+        publicRegister: false,
+      },
     },
     redis: {
       host: '',
       port: 6379,
-      password: undefined
+      password: undefined,
     },
     session: {
       cookieName: 'NUXT_SESSION_ID',
       maxAge: '7d',
-      domain: ''
-    }
+      domain: '',
+    },
   },
 
   compatibilityDate: '2024-07-11',
 
   eslint: {
     config: {
-      standalone: false
-    }
-  }
+      standalone: false,
+    },
+  },
 })

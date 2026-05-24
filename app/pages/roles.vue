@@ -18,18 +18,18 @@ const roleForm = reactive<{
 }>({
   name: '',
   alias: '',
-  desc: ''
+  desc: '',
 })
 
 const { data: rolesResult, status: rolesStatus, refresh: refreshRoles } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
-  default: () => ({ success: true, message: '', data: [] })
+  default: () => ({ success: true, message: '', data: [] }),
 })
 const { data: privilegesResult } = await useFetch<ResultDto<RawPrivilege[]>>('/api/privileges', {
-  default: () => ({ success: true, message: '', data: [] })
+  default: () => ({ success: true, message: '', data: [] }),
 })
 const { data: usersResult } = await useFetch<ResultDto<PublicUser[]>>('/api/user/list', {
   query: { pageIndex: 1, pageSize: 100 },
-  default: () => ({ success: true, message: '', data: [] })
+  default: () => ({ success: true, message: '', data: [] }),
 })
 
 const roles = computed(() => rolesResult.value.data ?? [])
@@ -45,7 +45,7 @@ const filteredRoles = computed(() => {
   return roles.value.filter(role => [
     role.name,
     role.alias,
-    role.desc || ''
+    role.desc || '',
   ].some(value => value.toLowerCase().includes(keyword)))
 })
 
@@ -76,7 +76,7 @@ function openDeleteRole(role: RawRole) {
 async function submitCreateRole() {
   const res = await $fetch<ResultDto<RawRole>>('/api/roles', {
     method: 'POST',
-    body: normalizeRoleForm()
+    body: normalizeRoleForm(),
   })
   toast.add({ title: res.success ? '角色已创建' : '创建失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -92,7 +92,7 @@ async function submitEditRole() {
 
   const res = await $fetch<ResultDto<RawRole>>(`/api/roles/${selectedRole.value.id}`, {
     method: 'PUT',
-    body: normalizeRoleForm()
+    body: normalizeRoleForm(),
   })
   toast.add({ title: res.success ? '角色已更新' : '更新失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -109,8 +109,8 @@ async function submitRolePrivileges() {
   const res = await $fetch<ResultDto<RawRole>>(`/api/roles/${selectedRole.value.id}/privileges`, {
     method: 'PUT',
     body: {
-      privilegeIds: selectedPrivilegeIds.value
-    }
+      privilegeIds: selectedPrivilegeIds.value,
+    },
   })
   toast.add({ title: res.success ? '授权已更新' : '授权失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -125,7 +125,7 @@ async function confirmDeleteRole() {
   }
 
   const res = await $fetch<ResultDto<boolean>>(`/api/roles/${selectedRole.value.id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
   })
   toast.add({ title: res.success ? '角色已删除' : '删除失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -153,7 +153,7 @@ function normalizeRoleForm() {
   return {
     name: roleForm.name.trim(),
     alias: roleForm.alias.trim(),
-    desc: roleForm.desc.trim() || undefined
+    desc: roleForm.desc.trim() || undefined,
   }
 }
 

@@ -9,14 +9,14 @@ const editOpen = ref(false)
 const deleteOpen = ref(false)
 const selectedPrivilege = ref<RawPrivilege>()
 const privilegeForm = reactive({
-  type: ''
+  type: '',
 })
 
 const { data: privilegesResult, status, refresh } = await useFetch<ResultDto<RawPrivilege[]>>('/api/privileges', {
-  default: () => ({ success: true, message: '', data: [] })
+  default: () => ({ success: true, message: '', data: [] }),
 })
 const { data: rolesResult } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
-  default: () => ({ success: true, message: '', data: [] })
+  default: () => ({ success: true, message: '', data: [] }),
 })
 
 const privileges = computed(() => privilegesResult.value.data ?? [])
@@ -30,7 +30,7 @@ const filteredPermissions = computed(() => {
 
   return privileges.value.filter(privilege => [
     String(privilege.id ?? ''),
-    privilege.type
+    privilege.type,
   ].some(value => value.toLowerCase().includes(keyword)))
 })
 
@@ -53,7 +53,7 @@ function openDeletePrivilege(privilege: RawPrivilege) {
 async function submitCreatePrivilege() {
   const res = await $fetch<ResultDto<RawPrivilege>>('/api/privileges', {
     method: 'POST',
-    body: normalizePrivilegeForm()
+    body: normalizePrivilegeForm(),
   })
   toast.add({ title: res.success ? '权限已创建' : '创建失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -69,7 +69,7 @@ async function submitEditPrivilege() {
 
   const res = await $fetch<ResultDto<RawPrivilege>>(`/api/privileges/${selectedPrivilege.value.id}`, {
     method: 'PUT',
-    body: normalizePrivilegeForm()
+    body: normalizePrivilegeForm(),
   })
   toast.add({ title: res.success ? '权限已更新' : '更新失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -84,7 +84,7 @@ async function confirmDeletePrivilege() {
   }
 
   const res = await $fetch<ResultDto<boolean>>(`/api/privileges/${selectedPrivilege.value.id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
   })
   toast.add({ title: res.success ? '权限已删除' : '删除失败', description: res.message, color: res.success ? 'success' : 'error' })
   if (res.success) {
@@ -95,7 +95,7 @@ async function confirmDeletePrivilege() {
 
 function normalizePrivilegeForm() {
   return {
-    type: privilegeForm.type.trim()
+    type: privilegeForm.type.trim(),
   }
 }
 

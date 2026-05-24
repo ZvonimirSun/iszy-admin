@@ -7,7 +7,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   let logged = false
   try {
     logged = await userStore.pullProfile(false, useRequestFetch())
-  } catch (error) {
+  }
+  catch (error) {
     const normalized = error as {
       status?: number
       statusCode?: number
@@ -19,7 +20,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       throw createError({
         statusCode: 403,
         statusMessage: '没有权限访问',
-        message: '仅管理员可以访问后台'
+        message: '仅管理员可以访问后台',
       })
     }
     throw error
@@ -29,8 +30,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo({
       path: '/login',
       query: {
-        redirect: to.fullPath
-      }
+        redirect: to.fullPath,
+      },
     })
   }
 })

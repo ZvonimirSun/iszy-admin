@@ -11,16 +11,17 @@ export default defineEventHandler(async (event): Promise<ResultDto<void>> => {
   if (!session) {
     return {
       success: true,
-      message: '已登出'
+      message: '已登出',
     }
   }
 
   try {
     await authFetch(event, '/auth/logout', {
       method: 'POST',
-      query
+      query,
     })
-  } catch (error) {
+  }
+  catch (error) {
     const errorCode = (error as FetchError)?.response?.status
     if (errorCode && errorCode !== 401) {
       throw error
@@ -33,6 +34,6 @@ export default defineEventHandler(async (event): Promise<ResultDto<void>> => {
 
   return {
     success: true,
-    message: '已登出'
+    message: '已登出',
   }
 })

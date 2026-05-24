@@ -7,27 +7,27 @@ const { isNotificationsSlideoverOpen } = useDashboard()
 const { data: usersResult, status: usersStatus } = await useFetch<ResultDto<PublicUser[]>>('/api/user/list', {
   query: {
     pageIndex: 1,
-    pageSize: 20
+    pageSize: 20,
   },
   default: () => ({
     success: true,
     message: '',
-    data: []
-  })
+    data: [],
+  }),
 })
 const { data: rolesResult, status: rolesStatus } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
   default: () => ({
     success: true,
     message: '',
-    data: []
-  })
+    data: [],
+  }),
 })
 const { data: privilegesResult, status: privilegesStatus } = await useFetch<ResultDto<RawPrivilege[]>>('/api/privileges', {
   default: () => ({
     success: true,
     message: '',
-    data: []
-  })
+    data: [],
+  }),
 })
 
 const adminUsers = computed(() => usersResult.value.data ?? [])
@@ -40,20 +40,20 @@ const stats = computed(() => [
     label: '用户总数',
     value: usersStatus.value === 'pending' ? '...' : adminUsers.value.length,
     icon: 'i-lucide-users',
-    description: `${activeUsers.value} 个账号已启用`
+    description: `${activeUsers.value} 个账号已启用`,
   },
   {
     label: '角色数量',
     value: rolesStatus.value === 'pending' ? '...' : adminRoles.value.length,
     icon: 'i-lucide-shield-check',
-    description: '来自 iszy-api 的角色清单'
+    description: '来自 iszy-api 的角色清单',
   },
   {
     label: '权限点',
     value: privilegesStatus.value === 'pending' ? '...' : adminPrivileges.value.length,
     icon: 'i-lucide-key-round',
-    description: '来自 iszy-api 的权限清单'
-  }
+    description: '来自 iszy-api 的权限清单',
+  },
 ])
 
 const recentUsers = computed(() => adminUsers.value.slice(0, 4))
@@ -61,7 +61,7 @@ const recentUsers = computed(() => adminUsers.value.slice(0, 4))
 const userStatusMeta: Record<UserStatus, { label: string, color: 'success' | 'warning' | 'neutral' }> = {
   [UserStatus.DEACTIVATED]: { label: '待激活', color: 'warning' },
   [UserStatus.ENABLED]: { label: '启用', color: 'success' },
-  [UserStatus.DISABLED]: { label: '停用', color: 'neutral' }
+  [UserStatus.DISABLED]: { label: '停用', color: 'neutral' },
 }
 </script>
 

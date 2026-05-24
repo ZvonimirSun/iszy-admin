@@ -1,6 +1,6 @@
 import type { ResultDto } from '@zvonimirsun/iszy-common'
-import { RoleEnum } from '@zvonimirsun/iszy-common'
 import type { PublicSimpleUser } from '#shared/types/auth'
+import { RoleEnum } from '@zvonimirsun/iszy-common'
 
 type ProfileFetcher = <T>(request: string, opts?: {
   signal?: AbortSignal
@@ -20,7 +20,7 @@ function isForbiddenError(error: unknown) {
 function createForbiddenError() {
   return Object.assign(new Error('仅管理员可以访问后台'), {
     status: 403,
-    statusCode: 403
+    statusCode: 403,
   })
 }
 
@@ -47,8 +47,8 @@ export const useUserStore = defineStore('user', () => {
           method: 'POST',
           body: {
             userName: payload.userName.trim(),
-            password: payload.password
-          }
+            password: payload.password,
+          },
         })
 
         if (res.success) {
@@ -62,10 +62,12 @@ export const useUserStore = defineStore('user', () => {
 
         removeProfile()
         error = res.message
-      } else {
+      }
+      else {
         error = '用户名或密码错误'
       }
-    } catch (cause) {
+    }
+    catch (cause) {
       if (isForbiddenError(cause)) {
         throw cause
       }
@@ -78,7 +80,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function logout() {
     const res = await $fetch<ResultDto<void>>('/api/auth/logout', {
-      method: 'POST'
+      method: 'POST',
     })
 
     if (res?.success) {
@@ -111,7 +113,7 @@ export const useUserStore = defineStore('user', () => {
           logged: boolean
           profile?: PublicSimpleUser
         }>>('/api/auth/check', {
-          signal: pullProfileAbortController!.signal
+          signal: pullProfileAbortController!.signal,
         })
 
         if (res?.success && res.data?.logged) {
@@ -123,7 +125,8 @@ export const useUserStore = defineStore('user', () => {
         removeProfile()
         profilePulled.value = true
         return false
-      } catch (error) {
+      }
+      catch (error) {
         if (isForbiddenError(error)) {
           profilePulled.value = true
           throw error
@@ -133,7 +136,8 @@ export const useUserStore = defineStore('user', () => {
           profilePulled.value = true
         }
         return false
-      } finally {
+      }
+      finally {
         pullProfileAbortController = null
         pullProfilePromise = null
       }
@@ -158,7 +162,7 @@ export const useUserStore = defineStore('user', () => {
     logout,
     pullProfile,
     updateProfile,
-    removeProfile
+    removeProfile,
   }
 })
 

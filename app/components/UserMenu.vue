@@ -15,22 +15,22 @@ const user = computed(() => {
   return {
     label,
     avatar: {
-      alt: label
-    }
+      alt: label,
+    },
   }
 })
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
   label: user.value.label,
-  avatar: user.value.avatar
+  avatar: user.value.avatar,
 }], [{
   label: '个人资料',
-  icon: 'i-lucide-user'
+  icon: 'i-lucide-user',
 }, {
   label: '系统设置',
   icon: 'i-lucide-settings',
-  to: '/settings'
+  to: '/settings',
 }], [{
   label: '外观',
   icon: 'i-lucide-sun-moon',
@@ -42,7 +42,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     onSelect(event: Event) {
       event.preventDefault()
       colorMode.preference = 'system'
-    }
+    },
   }, {
     label: '浅色',
     icon: 'i-lucide-sun',
@@ -51,7 +51,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     onSelect(event: Event) {
       event.preventDefault()
       colorMode.preference = 'light'
-    }
+    },
   }, {
     label: '深色',
     icon: 'i-lucide-moon',
@@ -60,12 +60,12 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     onSelect(event: Event) {
       event.preventDefault()
       colorMode.preference = 'dark'
-    }
-  }]
+    },
+  }],
 }], [{
   label: '退出登录',
   icon: 'i-lucide-log-out',
-  to: '/logout'
+  to: '/logout',
 }]]))
 </script>
 
@@ -79,7 +79,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       v-bind="{
         ...user,
         label: collapsed ? undefined : user?.label,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
+        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
       }"
       color="neutral"
       variant="ghost"
@@ -87,7 +87,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       :square="collapsed"
       class="data-[state=open]:bg-elevated"
       :ui="{
-        trailingIcon: 'text-dimmed'
+        trailingIcon: 'text-dimmed',
       }"
     />
   </UDropdownMenu>

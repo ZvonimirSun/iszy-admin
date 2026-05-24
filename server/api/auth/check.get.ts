@@ -10,9 +10,9 @@ export default defineEventHandler(async (event): Promise<ResultDto<{
     return {
       success: true,
       data: {
-        logged: false
+        logged: false,
       },
-      message: '未登录'
+      message: '未登录',
     }
   }
 
@@ -22,11 +22,12 @@ export default defineEventHandler(async (event): Promise<ResultDto<{
       success: true,
       data: {
         logged: true,
-        profile: toPublicSimpleUser(profile)
+        profile: toPublicSimpleUser(profile),
       },
-      message: '已登录'
+      message: '已登录',
     }
-  } catch (error) {
+  }
+  catch (error) {
     if ((error as { statusCode?: number }).statusCode === 403) {
       throw error
     }
@@ -36,8 +37,8 @@ export default defineEventHandler(async (event): Promise<ResultDto<{
   return {
     success: true,
     data: {
-      logged: false
+      logged: false,
     },
-    message: '未登录'
+    message: '未登录',
   }
 })
