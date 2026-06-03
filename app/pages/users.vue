@@ -14,6 +14,7 @@ const roleOpen = ref(false)
 const roleLoading = ref(false)
 const userToAssignRoles = ref<PublicUser>()
 const selectedRoleIds = ref<number[]>([])
+const roleQuery = ref('')
 const pageIndex = ref(1)
 const pageSize = ref(20)
 
@@ -59,6 +60,19 @@ const { data: rolesResult } = await useFetch<ResultDto<RawRole[]>>('/api/roles',
 
 const users = computed(() => data.value.data ?? [])
 const roles = computed(() => rolesResult.value.data ?? [])
+
+const filteredRoles = computed(() => {
+  const keyword = roleQuery.value.trim().toLowerCase()
+  if (!keyword) {
+    return roles.value
+  }
+
+  return roles.value.filter(role => [
+    role.name,
+    role.alias,
+    role.desc || '',
+  ].some(value => value?.toLowerCase().includes(keyword)))
+})
 
 const filteredUsers = computed(() => {
   const keyword = q.value.trim().toLowerCase()
@@ -109,6 +123,7 @@ function requestRemoveUser(user: PublicUser) {
 
 function requestAssignRoles(user: PublicUser) {
   userToAssignRoles.value = user
+  roleQuery.value = ''
   selectedRoleIds.value = roles.value
     .filter(role => user.roles?.some(userRole => userRole.name === role.name || userRole.alias === role.alias))
     .map(role => role.id)
@@ -466,21 +481,45 @@ function roleLabel(user: PublicUser) {
       >
         <template #body>
           <div class="space-y-4">
-            <div class="grid gap-2 sm:grid-cols-2">
-              <label
-                v-for="role in roles"
-                :key="role.id || role.name"
-                class="flex cursor-pointer items-start gap-2 rounded-md border border-default p-3"
-              >
-                <UCheckbox
-                  :model-value="selectedRoleIds.includes(role.id!)"
-                  @update:model-value="toggleSelectedRole(role.id, $event)"
-                />
-                <span class="min-w-0">
-                  <span class="block text-sm font-medium text-highlighted">{{ role.alias || role.name }}</span>
-                  <span class="block truncate text-xs text-muted">{{ role.name }}</span>
-                </span>
-              </label>
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <UInput
+                v-model="roleQuery"
+                icon="i-lucide-search"
+                placeholder="搜索角色名称、标识或说明"
+                class="w-full sm:max-w-xs"
+              />
+              <span class="text-sm text-muted">
+                已选 {{ selectedRoleIds.length }} 个角色
+              </span>
+            </div>
+
+            <div class="max-h-80 overflow-y-auto pr-1">
+              <div v-if="!filteredRoles.length" class="rounded-md border border-dashed border-default px-4 py-8 text-center text-sm text-muted">
+                暂无匹配角色
+              </div>
+
+              <div v-else class="grid gap-2 sm:grid-cols-2">
+                <label
+                  v-for="role in filteredRoles"
+                  :key="role.id || role.name"
+                  class="flex cursor-pointer items-start gap-2 rounded-md border border-default p-3"
+                >
+                  <UCheckbox
+                    :model-value="selectedRoleIds.includes(role.id!)"
+                    @update:model-value="toggleSelectedRole(role.id, $event)"
+                  />
+                  <span class="min-w-0">
+                    <span class="block text-sm font-medium text-highlighted">{{ role.alias || role.name }}</span>
+                    <span class="block truncate text-xs text-muted">{{ role.name }}</span>
+                    <span
+                      class="mt-1 block min-h-4 truncate text-xs text-muted"
+                      :title="role.desc || undefined"
+                    >
+                      {{ role.desc || '' }}
+                    </span>
+                  </span>
+                </label>
+              </div>
             </div>
 
             <div class="flex justify-end gap-2">
