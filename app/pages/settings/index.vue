@@ -1,158 +1,85 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@nuxt/ui'
-import * as z from 'zod'
+const config = usePublicConfig()
 
-const fileRef = ref<HTMLInputElement>()
+const siteItems = computed(() => [{
+  label: '站点名称',
+  value: config.title || '未配置',
+}, {
+  label: '站点描述',
+  value: config.description || '未配置',
+}, {
+  label: '站点地址',
+  value: config.url || '未配置',
+}, {
+  label: '后端接口源',
+  value: config.apiOrigin || '未配置',
+}, {
+  label: '开放注册',
+  value: config.features?.publicRegister ? '已开启' : '已关闭',
+}])
 
-const profileSchema = z.object({
-  name: z.string().min(2, 'Too short'),
-  email: z.string().email('Invalid email'),
-  username: z.string().min(2, 'Too short'),
-  avatar: z.string().optional(),
-  bio: z.string().optional(),
-})
-
-type ProfileSchema = z.output<typeof profileSchema>
-
-const profile = reactive<Partial<ProfileSchema>>({
-  name: 'Benjamin Canac',
-  email: 'ben@nuxtlabs.com',
-  username: 'benjamincanac',
-  avatar: undefined,
-  bio: undefined,
-})
-const toast = useToast()
-async function onSubmit(event: FormSubmitEvent<ProfileSchema>) {
-  Object.assign(profile, event.data)
-  toast.add({
-    title: 'Success',
-    description: 'Your settings have been updated.',
-    icon: 'i-lucide-check',
-    color: 'success',
-  })
-}
-
-function onFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-
-  if (!input.files?.length) {
-    return
-  }
-
-  profile.avatar = URL.createObjectURL(input.files[0]!)
-}
-
-function onFileClick() {
-  fileRef.value?.click()
-}
+const assetItems = computed(() => [{
+  label: 'Logo',
+  value: config.logo || '未配置',
+}, {
+  label: '默认分享图',
+  value: config.image || '未配置',
+}, {
+  label: '小尺寸 Favicon',
+  value: config.favicon?.small || '未配置',
+}, {
+  label: 'Apple Touch Icon',
+  value: config.favicon?.appleTouchIcon || '未配置',
+}, {
+  label: 'Android Manifest',
+  value: config.favicon?.androidManifest || '未配置',
+}])
 </script>
 
 <template>
-  <UForm
-    id="settings"
-    :schema="profileSchema"
-    :state="profile"
-    @submit="onSubmit"
-  >
-    <UPageCard
-      title="Profile"
-      description="These informations will be displayed publicly."
-      variant="naked"
-      orientation="horizontal"
-      class="mb-4"
-    >
-      <UButton
-        form="settings"
-        label="Save changes"
-        color="neutral"
-        type="submit"
-        class="w-fit lg:ms-auto"
-      />
-    </UPageCard>
+  <UPageCard
+    title="运行配置"
+    description="当前后台只展示站点配置状态，配置修改请通过 Nuxt runtimeConfig 或部署环境变量完成。"
+    variant="naked"
+  />
 
-    <UPageCard variant="subtle">
-      <UFormField
-        name="name"
-        label="Name"
-        description="Will appear on receipts, invoices, and other communication."
-        required
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-      >
-        <UInput
-          v-model="profile.name"
-          autocomplete="off"
-        />
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="email"
-        label="Email"
-        description="Used to sign in, for email receipts and product updates."
-        required
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-      >
-        <UInput
-          v-model="profile.email"
-          type="email"
-          autocomplete="off"
-        />
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="username"
-        label="Username"
-        description="Your unique username for logging in and your profile URL."
-        required
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-      >
-        <UInput
-          v-model="profile.username"
-          type="username"
-          autocomplete="off"
-        />
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="avatar"
-        label="Avatar"
-        description="JPG, GIF or PNG. 1MB Max."
-        class="flex max-sm:flex-col justify-between sm:items-center gap-4"
-      >
-        <div class="flex flex-wrap items-center gap-3">
-          <UAvatar
-            :src="profile.avatar"
-            :alt="profile.name"
-            size="lg"
-          />
-          <UButton
-            label="Choose"
-            color="neutral"
-            @click="onFileClick"
-          />
-          <input
-            ref="fileRef"
-            type="file"
-            class="hidden"
-            accept=".jpg, .jpeg, .png, .gif"
-            @change="onFileChange"
-          >
-        </div>
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="bio"
-        label="Bio"
-        description="Brief description for your profile. URLs are hyperlinked."
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-        :ui="{ container: 'w-full' }"
-      >
-        <UTextarea
-          v-model="profile.bio"
-          :rows="5"
-          autoresize
-          class="w-full"
-        />
-      </UFormField>
-    </UPageCard>
-  </UForm>
+  <UAlert
+    title="仅管理员可访问"
+    description="系统设置属于后台管理范围，登录校验会拒绝非管理员账号进入。"
+    icon="i-lucide-shield-check"
+    color="primary"
+    variant="subtle"
+  />
+
+  <UPageCard
+    title="站点配置"
+    description="来自 runtimeConfig.public 的基础站点信息。"
+    variant="subtle"
+    :ui="{ container: 'divide-y divide-default gap-y-0' }"
+  >
+    <div
+      v-for="item in siteItems"
+      :key="item.label"
+      class="flex flex-col gap-1 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span class="text-sm text-muted">{{ item.label }}</span>
+      <span class="break-all text-sm font-medium text-highlighted sm:text-right">{{ item.value }}</span>
+    </div>
+  </UPageCard>
+
+  <UPageCard
+    title="静态资源配置"
+    description="用于品牌展示、站点图标与分享预览的公开配置。"
+    variant="subtle"
+    :ui="{ container: 'divide-y divide-default gap-y-0' }"
+  >
+    <div
+      v-for="item in assetItems"
+      :key="item.label"
+      class="flex flex-col gap-1 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <span class="text-sm text-muted">{{ item.label }}</span>
+      <span class="break-all text-sm font-medium text-highlighted sm:text-right">{{ item.value }}</span>
+    </div>
+  </UPageCard>
 </template>

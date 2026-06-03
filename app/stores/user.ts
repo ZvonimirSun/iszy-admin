@@ -2,6 +2,23 @@ import type { ResultDto } from '@zvonimirsun/iszy-common'
 import type { PublicSimpleUser } from '#shared/types/auth'
 import { RoleEnum } from '@zvonimirsun/iszy-common'
 
+interface LoginAttemptFailureData {
+  code: 'LOGIN_FAILED'
+  failedCount: number
+  remainingAttempts: number
+  maxAttempts: number
+  windowSeconds: number
+}
+
+interface LoginBanFailureData {
+  code: 'LOGIN_BANNED'
+  retryAfterSeconds: number
+  bannedUntil: string
+}
+
+type LoginFailureData = LoginAttemptFailureData | LoginBanFailureData
+type LoginResultData = PublicSimpleUser | LoginFailureData
+
 type ProfileFetcher = <T>(request: string, opts?: {
   signal?: AbortSignal
 }) => Promise<T>
@@ -42,29 +59,31 @@ export const useUserStore = defineStore('user', () => {
   }) {
     let error = ''
     try {
-      if (payload.userName && payload.password) {
-        const res = await $fetch<ResultDto<PublicSimpleUser>>('/api/auth/login', {
-          method: 'POST',
+      const { userName, password } = payload
+      if (userName && password) {
+        const res = await $fetch<ResultDto<LoginResultData>>('/api/auth/login', {
+          method: 'post',
           body: {
-            userName: payload.userName.trim(),
-            password: payload.password,
+            userName: userName.trim(),
+            password,
           },
         })
 
         if (res.success) {
+          const profile = res.data as PublicSimpleUser
           profilePulled.value = true
-          updateProfile(res.data)
-          if (!hasAdminRole(res.data)) {
+          updateProfile(profile)
+          if (!hasAdminRole(profile)) {
             throw createForbiddenError()
           }
           return
         }
 
         removeProfile()
-        error = res.message
+        error = formatLoginFailureMessage(res.message, res.data)
       }
       else {
-        error = '用户名或密码错误'
+        error = '请输入用户名和密码'
       }
     }
     catch (cause) {
@@ -76,6 +95,19 @@ export const useUserStore = defineStore('user', () => {
     }
 
     throw new Error(error)
+  }
+
+  function formatLoginFailureMessage(message: string, data?: LoginResultData) {
+    const fallbackMessage = message || '登录失败'
+    if (!data || !('code' in data)) {
+      return fallbackMessage
+    }
+
+    if (data.code === 'LOGIN_BANNED') {
+      return '登录失败次数过多，请稍后再试。'
+    }
+
+    return fallbackMessage
   }
 
   async function logout() {

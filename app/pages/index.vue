@@ -2,8 +2,6 @@
 import type { PublicUser, RawPrivilege, RawRole, ResultDto } from '@zvonimirsun/iszy-common'
 import { UserStatus } from '@zvonimirsun/iszy-common'
 
-const { isNotificationsSlideoverOpen } = useDashboard()
-
 const { data: usersResult, status: usersStatus } = await useFetch<ResultDto<PublicUser[]>>('/api/user/list', {
   query: {
     pageIndex: 1,
@@ -74,19 +72,6 @@ const userStatusMeta: Record<UserStatus, { label: string, color: 'success' | 'wa
         </template>
 
         <template #right>
-          <UTooltip text="通知" :shortcuts="['N']">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              square
-              @click="isNotificationsSlideoverOpen = true"
-            >
-              <UChip color="error" inset>
-                <UIcon name="i-lucide-bell" class="size-5 shrink-0" />
-              </UChip>
-            </UButton>
-          </UTooltip>
-
           <UButton to="/users" label="新增用户" icon="i-lucide-user-plus" />
         </template>
       </UDashboardNavbar>

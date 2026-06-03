@@ -1,7 +1,18 @@
 import type { PublicUser, ResultDto } from '@zvonimirsun/iszy-common'
+import type { FetchError } from 'ofetch'
 import type { PublicSimpleUser } from '#shared/types/auth'
 
-export default defineEventHandler(async (event): Promise<ResultDto<PublicSimpleUser>> => {
+interface LoginFailureData {
+  code: 'LOGIN_FAILED' | 'LOGIN_BANNED'
+  failedCount?: number
+  remainingAttempts?: number
+  maxAttempts?: number
+  windowSeconds?: number
+  retryAfterSeconds?: number
+  bannedUntil?: string
+}
+
+export default defineEventHandler(async (event): Promise<ResultDto<PublicSimpleUser | LoginFailureData>> => {
   const body = await readBody<{
     userName: string
     password: string
@@ -39,11 +50,13 @@ export default defineEventHandler(async (event): Promise<ResultDto<PublicSimpleU
       data: res.data?.profile ? toPublicSimpleUser(res.data.profile) : undefined,
     }
   }
-  catch {
+  catch (error) {
     await destroyRedisSession(event)
+    const errorData = (error as FetchError<ResultDto<LoginFailureData>>).data
     return {
       success: false,
-      message: '登录失败',
+      message: errorData?.message || '登录失败',
+      data: errorData?.data,
     }
   }
 })
