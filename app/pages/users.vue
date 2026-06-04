@@ -12,6 +12,7 @@ const deleteLoading = ref(false)
 const userToDelete = ref<PublicUser>()
 const roleOpen = ref(false)
 const roleLoading = ref(false)
+const roleDetailLoading = ref(false)
 const userToAssignRoles = ref<PublicUser>()
 const selectedRoleIds = ref<number[]>([])
 const roleQuery = ref('')
@@ -121,14 +122,29 @@ function requestRemoveUser(user: PublicUser) {
   deleteOpen.value = true
 }
 
-function requestAssignRoles(user: PublicUser) {
+async function requestAssignRoles(user: PublicUser) {
   userToAssignRoles.value = user
   roleQuery.value = ''
-  selectedRoleIds.value = roles.value
-    .filter(role => user.roles?.some(userRole => userRole.name === role.name || userRole.alias === role.alias))
-    .map(role => role.id)
-    .filter((id): id is number => id != null)
+  selectedRoleIds.value = []
   roleOpen.value = true
+  roleDetailLoading.value = true
+
+  try {
+    const res = await $fetch<ResultDto<PublicUser>>(`/api/user/${user.userId}`)
+    if (!res.success || !res.data) {
+      toast.add({ title: '角色加载失败', description: res.message, color: 'error' })
+      return
+    }
+
+    userToAssignRoles.value = res.data
+    selectedRoleIds.value = roles.value
+      .filter(role => res.data?.roles?.some(userRole => isSameRole(role, userRole)))
+      .map(role => role.id)
+      .filter((id): id is number => id != null)
+  }
+  finally {
+    roleDetailLoading.value = false
+  }
 }
 
 async function confirmAssignRoles() {
@@ -243,12 +259,10 @@ function resetCreateForm() {
   newUser.email = ''
 }
 
-function roleLabel(user: PublicUser) {
-  if (!user.roles?.length) {
-    return '未分配角色'
-  }
-
-  return user.roles.map(role => role.alias || role.name).join('、')
+function isSameRole(role: RawRole, userRole: RawRole) {
+  return (role.id != null && userRole.id != null && role.id === userRole.id)
+    || role.name === userRole.name
+    || role.alias === userRole.alias
 }
 </script>
 
@@ -383,8 +397,8 @@ function roleLabel(user: PublicUser) {
                   </div>
                 </td>
                 <td class="px-4 py-3">
-                  <UBadge color="primary" variant="subtle">
-                    {{ roleLabel(user) }}
+                  <UBadge color="neutral" variant="subtle">
+                    点击分配角色查看
                   </UBadge>
                 </td>
                 <td class="px-4 py-3">
@@ -493,7 +507,11 @@ function roleLabel(user: PublicUser) {
               </span>
             </div>
 
-            <div class="max-h-80 overflow-y-auto pr-1">
+            <div v-if="roleDetailLoading" class="rounded-md border border-dashed border-default px-4 py-8 text-center text-sm text-muted">
+              加载用户角色中...
+            </div>
+
+            <div v-else class="max-h-80 overflow-y-auto pr-1">
               <div v-if="!filteredRoles.length" class="rounded-md border border-dashed border-default px-4 py-8 text-center text-sm text-muted">
                 暂无匹配角色
               </div>
@@ -534,6 +552,7 @@ function roleLabel(user: PublicUser) {
                 label="保存角色"
                 icon="i-lucide-shield-check"
                 :loading="roleLoading"
+                :disabled="roleDetailLoading"
                 @click="confirmAssignRoles"
               />
             </div>
