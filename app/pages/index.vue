@@ -32,6 +32,15 @@ const adminUsers = computed(() => usersResult.value.data ?? [])
 const adminRoles = computed(() => rolesResult.value.data ?? [])
 const adminPrivileges = computed(() => privilegesResult.value.data ?? [])
 const activeUsers = computed(() => adminUsers.value.filter(user => user.status === UserStatus.ENABLED).length)
+const inactiveUsers = computed(() => adminUsers.value.filter(user => user.status === UserStatus.DISABLED).length)
+const pendingUsers = computed(() => adminUsers.value.filter(user => user.status === UserStatus.DEACTIVATED).length)
+const userEnabledRate = computed(() => {
+  if (!adminUsers.value.length) {
+    return '0%'
+  }
+
+  return `${Math.round((activeUsers.value / adminUsers.value.length) * 100)}%`
+})
 
 const stats = computed(() => [
   {
@@ -39,27 +48,55 @@ const stats = computed(() => [
     value: usersStatus.value === 'pending' ? '...' : adminUsers.value.length,
     icon: 'i-lucide-users',
     description: `${activeUsers.value} 个账号已启用`,
+    to: '/users',
   },
   {
     label: '角色数量',
     value: rolesStatus.value === 'pending' ? '...' : adminRoles.value.length,
     icon: 'i-lucide-shield-check',
-    description: '来自 iszy-api 的角色清单',
+    description: '维护后台访问边界',
+    to: '/roles',
   },
   {
     label: '权限点',
     value: privilegesStatus.value === 'pending' ? '...' : adminPrivileges.value.length,
     icon: 'i-lucide-key-round',
-    description: '来自 iszy-api 的权限清单',
+    description: '覆盖接口与资源动作',
+    to: '/permissions',
   },
 ])
 
 const recentUsers = computed(() => adminUsers.value.slice(0, 4))
 
+const userStatusSummary = computed(() => [
+  {
+    label: '启用',
+    value: activeUsers.value,
+    icon: 'i-lucide-check-circle',
+    color: 'success' as const,
+  },
+  {
+    label: '待激活',
+    value: pendingUsers.value,
+    icon: 'i-lucide-clock-3',
+    color: 'warning' as const,
+  },
+  {
+    label: '停用',
+    value: inactiveUsers.value,
+    icon: 'i-lucide-ban',
+    color: 'neutral' as const,
+  },
+])
+
 const userStatusMeta: Record<UserStatus, { label: string, color: 'success' | 'warning' | 'neutral' }> = {
   [UserStatus.DEACTIVATED]: { label: '待激活', color: 'warning' },
   [UserStatus.ENABLED]: { label: '启用', color: 'success' },
   [UserStatus.DISABLED]: { label: '停用', color: 'neutral' },
+}
+
+function getUserStatusMeta(status: UserStatus) {
+  return userStatusMeta[status] ?? { label: '未知', color: 'neutral' as const }
 }
 </script>
 
@@ -72,102 +109,159 @@ const userStatusMeta: Record<UserStatus, { label: string, color: 'success' | 'wa
         </template>
 
         <template #right>
-          <UButton to="/users" label="新增用户" icon="i-lucide-user-plus" />
+          <UButton to="/users" label="用户管理" icon="i-lucide-users" />
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <UPageCard
-          v-for="stat in stats"
-          :key="stat.label"
-          :title="stat.label"
-          :description="stat.description"
-          variant="subtle"
-        >
-          <div class="flex items-center justify-between gap-4">
-            <p class="text-3xl font-semibold text-highlighted">
-              {{ stat.value }}
-            </p>
-            <UIcon :name="stat.icon" class="size-8 text-primary" />
-          </div>
-        </UPageCard>
-      </div>
-
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <UPageCard
-          title="角色授权概览"
-          description="来自 iszy-api 的角色与权限关系。"
-          variant="subtle"
-          :ui="{ container: 'p-0 sm:p-0 gap-y-0', header: 'p-4 border-b border-default mb-0' }"
-        >
-          <div class="divide-y divide-default">
-            <div v-if="rolesStatus === 'pending'" class="p-4 text-sm text-muted">
-              加载角色中...
-            </div>
-            <div v-else-if="!adminRoles.length" class="p-4 text-sm text-muted">
-              暂无角色数据
-            </div>
-            <div
-              v-for="role in adminRoles"
-              :key="role.id || role.name"
-              class="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between"
-            >
-              <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <p class="font-medium text-highlighted">
-                    {{ role.alias || role.name }}
+      <div class="space-y-6">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <UCard
+            v-for="stat in stats"
+            :key="stat.label"
+            variant="subtle"
+            :ui="{ body: 'p-4 sm:p-5' }"
+          >
+            <div class="space-y-3">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="mb-4 flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary ring ring-primary/15">
+                    <UIcon :name="stat.icon" class="size-5" />
+                  </div>
+                  <p class="text-sm font-medium text-muted">
+                    {{ stat.label }}
                   </p>
-                  <UBadge color="neutral" variant="subtle">
-                    {{ role.name }}
-                  </UBadge>
+                  <p class="mt-1 text-3xl font-semibold text-highlighted">
+                    {{ stat.value }}
+                  </p>
                 </div>
-                <p class="mt-1 text-sm text-muted">
-                  {{ role.desc || '暂无角色说明' }}
-                </p>
+                <UButton
+                  :to="stat.to"
+                  icon="i-lucide-arrow-up-right"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  :aria-label="`打开${stat.label}`"
+                />
               </div>
-              <div class="flex shrink-0 items-center gap-2">
-                <UBadge color="success" variant="subtle">
-                  {{ role.privileges?.length || 0 }} 项权限
+
+              <p class="text-sm text-muted">
+                {{ stat.description }}
+              </p>
+            </div>
+          </UCard>
+        </div>
+
+        <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+          <UCard
+            variant="subtle"
+            :ui="{ header: 'px-4 py-4 sm:px-5', body: 'px-4 py-4 sm:px-5' }"
+          >
+            <template #header>
+              <h2 class="text-base font-semibold text-highlighted">
+                账号状态
+              </h2>
+              <p class="mt-1 text-sm text-muted">
+                用于判断当前后台账号是否需要激活、停用或清理。
+              </p>
+            </template>
+
+            <div class="space-y-4">
+              <div class="grid divide-y divide-default rounded-md border border-default bg-default sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <div
+                  v-for="item in userStatusSummary"
+                  :key="item.label"
+                  class="px-4 py-3"
+                >
+                  <div class="flex items-center gap-2 text-sm text-muted">
+                    <UIcon :name="item.icon" class="size-4" />
+                    <span>{{ item.label }}</span>
+                  </div>
+                  <div class="mt-3 flex items-end justify-between gap-3">
+                    <span class="text-2xl font-semibold text-highlighted">{{ item.value }}</span>
+                    <UBadge :color="item.color" variant="subtle">
+                      账号
+                    </UBadge>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-md border border-default bg-elevated/40 px-4 py-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium text-highlighted">
+                      启用率 {{ userEnabledRate }}
+                    </p>
+                    <p class="mt-1 text-sm text-muted">
+                      工作台展示账号状态分布即可，角色授权细节放在角色管理里处理。
+                    </p>
+                  </div>
+                  <UButton
+                    to="/users"
+                    label="查看用户"
+                    icon="i-lucide-arrow-right"
+                    color="neutral"
+                    variant="outline"
+                  />
+                </div>
+              </div>
+            </div>
+          </UCard>
+
+          <UCard
+            variant="subtle"
+            :ui="{ header: 'px-4 py-4 sm:px-5', body: 'p-0', footer: 'px-4 py-3 sm:px-5' }"
+          >
+            <template #header>
+              <h2 class="text-base font-semibold text-highlighted">
+                最近账号
+              </h2>
+              <p class="mt-1 text-sm text-muted">
+                保留为快速入口，完整筛选和操作请进入用户管理。
+              </p>
+            </template>
+
+            <div class="divide-y divide-default">
+              <div v-if="usersStatus === 'pending'" class="px-5 py-8 text-center text-sm text-muted">
+                加载用户中...
+              </div>
+              <div v-else-if="!recentUsers.length" class="px-5 py-8 text-center text-sm text-muted">
+                暂无用户数据
+              </div>
+              <div
+                v-for="user in recentUsers"
+                :key="user.userId"
+                class="flex items-center gap-3 px-4 py-4 sm:px-5"
+              >
+                <UAvatar :alt="user.nickName || user.userName" size="md" class="shrink-0" />
+                <div class="min-w-0 flex-1">
+                  <p class="truncate font-medium text-highlighted">
+                    {{ user.nickName || user.userName }}
+                  </p>
+                  <p class="mt-1 truncate text-sm text-muted">
+                    #{{ user.userId }} · {{ user.email || user.mobile || user.userName }}
+                  </p>
+                </div>
+                <UBadge :color="getUserStatusMeta(user.status as UserStatus).color" variant="subtle" class="shrink-0">
+                  {{ getUserStatusMeta(user.status as UserStatus).label }}
                 </UBadge>
               </div>
             </div>
-          </div>
-        </UPageCard>
 
-        <UPageCard
-          title="最近账号"
-          description="来自 iszy-api 的用户列表。"
-          variant="subtle"
-          :ui="{ container: 'p-0 sm:p-0 gap-y-0', header: 'p-4 border-b border-default mb-0' }"
-        >
-          <div class="divide-y divide-default">
-            <div v-if="usersStatus === 'pending'" class="p-4 text-sm text-muted">
-              加载用户中...
-            </div>
-            <div v-else-if="!recentUsers.length" class="p-4 text-sm text-muted">
-              暂无用户数据
-            </div>
-            <div
-              v-for="user in recentUsers"
-              :key="user.userId"
-              class="flex items-center justify-between gap-3 p-4"
-            >
-              <div class="min-w-0">
-                <p class="truncate font-medium text-highlighted">
-                  {{ user.nickName || user.userName }}
-                </p>
-                <p class="truncate text-sm text-muted">
-                  #{{ user.userId }} · {{ user.email || user.mobile || user.userName }}
-                </p>
+            <template #footer>
+              <div class="flex justify-end">
+                <UButton
+                  to="/users"
+                  label="打开用户管理"
+                  icon="i-lucide-arrow-right"
+                  color="neutral"
+                  variant="ghost"
+                />
               </div>
-              <UBadge :color="userStatusMeta[user.status as UserStatus].color" variant="subtle" class="shrink-0">
-                {{ userStatusMeta[user.status as UserStatus].label }}
-              </UBadge>
-            </div>
-          </div>
-        </UPageCard>
+            </template>
+          </UCard>
+        </div>
       </div>
     </template>
   </UDashboardPanel>
