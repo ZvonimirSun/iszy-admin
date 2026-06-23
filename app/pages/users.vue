@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
 import type { PublicUser, RawRole, RegisterUser, ResultDto } from '@zvonimirsun/iszy-common'
 import { UserStatus } from '@zvonimirsun/iszy-common'
 
@@ -19,7 +20,7 @@ const roleLoading = ref(false)
 const roleDetailLoading = ref(false)
 const userToAssignRoles = ref<PublicUser>()
 const selectedRoleIds = ref<number[]>([])
-const roleQuery = ref('')
+const roles = ref<RawRole[]>([])
 const pageIndex = ref(1)
 const pageSize = ref(20)
 
@@ -44,6 +45,15 @@ const statusMeta: Record<UserStatus, { label: string, color: 'success' | 'warnin
   [UserStatus.DISABLED]: { label: '停用', color: 'neutral' },
 }
 
+const userColumns: TableColumn<PublicUser>[] = [
+  { accessorKey: 'userId', header: '用户 ID' },
+  { id: 'user', header: '用户' },
+  { accessorKey: 'userName', header: '用户名' },
+  { id: 'contact', header: '联系方式' },
+  { accessorKey: 'status', header: '状态' },
+  { id: 'actions', header: '操作' },
+]
+
 const { data, status, refresh } = await useFetch<ResultDto<PublicUser[]>>('/api/user/list', {
   query: {
     pageIndex,
@@ -55,32 +65,28 @@ const { data, status, refresh } = await useFetch<ResultDto<PublicUser[]>>('/api/
     data: [],
   }),
 })
-const { data: rolesResult } = await useFetch<ResultDto<RawRole[]>>('/api/roles', {
-  default: () => ({
-    success: true,
-    message: '',
-    data: [],
-  }),
-})
-
 const users = computed(() => data.value.data ?? [])
-const roles = computed(() => rolesResult.value.data ?? [])
 const defaultRoleIds = computed(() => roles.value
   .filter(isDefaultRole)
   .map(role => role.id)
   .filter((id): id is number => id != null))
 
-const filteredRoles = computed(() => {
-  const keyword = roleQuery.value.trim().toLowerCase()
-  if (!keyword) {
-    return roles.value
-  }
+const roleOptions = computed(() => roles.value
+  .filter(role => role.id != null)
+  .map(role => ({
+    id: role.id!,
+    label: role.alias || role.name,
+    description: isRequiredRole(role)
+      ? `${role.name} · 默认角色`
+      : role.desc || role.name,
+    disabled: isRequiredRole(role),
+  })))
 
-  return roles.value.filter(role => [
-    role.name,
-    role.alias,
-    role.desc || '',
-  ].some(value => value?.toLowerCase().includes(keyword)))
+const selectedRoleModel = computed<number[]>({
+  get: () => selectedRoleIds.value,
+  set: (roleIds) => {
+    selectedRoleIds.value = withDefaultRoleIds(roleIds)
+  },
 })
 
 const filteredUsers = computed(() => {
@@ -132,13 +138,16 @@ function requestRemoveUser(user: PublicUser) {
 
 async function requestAssignRoles(user: PublicUser) {
   userToAssignRoles.value = user
-  roleQuery.value = ''
   selectedRoleIds.value = []
   roleOpen.value = true
   roleDetailLoading.value = true
 
   try {
-    const res = await $fetch<ResultDto<PublicUser>>(`/api/user/${user.userId}`)
+    const [roleList, res] = await Promise.all([
+      fetchRoles(),
+      $fetch<ResultDto<PublicUser>>(`/api/user/${user.userId}`),
+    ])
+    roles.value = roleList
     if (!res.success || !res.data) {
       toast.add({ title: '角色加载失败', description: res.message, color: 'error' })
       return
@@ -215,25 +224,6 @@ async function confirmRemoveUser() {
   }
 }
 
-function toggleSelectedRole(roleId: number | undefined, checked: boolean | 'indeterminate') {
-  if (roleId == null) {
-    return
-  }
-
-  if (!checked && defaultRoleIds.value.includes(roleId)) {
-    return
-  }
-
-  if (checked && !selectedRoleIds.value.includes(roleId)) {
-    selectedRoleIds.value.push(roleId)
-    return
-  }
-
-  if (!checked) {
-    selectedRoleIds.value = selectedRoleIds.value.filter(id => id !== roleId)
-  }
-}
-
 function withDefaultRoleIds(roleIds: number[]) {
   return Array.from(new Set([...roleIds, ...defaultRoleIds.value]))
 }
@@ -288,6 +278,11 @@ function isSameRole(role: RawRole, userRole: RawRole) {
     || role.name === userRole.name
     || role.alias === userRole.alias
 }
+
+async function fetchRoles() {
+  const res = await $fetch<ResultDto<RawRole[]>>('/api/roles')
+  return res.data ?? []
+}
 </script>
 
 <template>
@@ -299,7 +294,7 @@ function isSameRole(role: RawRole, userRole: RawRole) {
         </template>
 
         <template #right>
-          <UModal v-model:open="createOpen" title="新增用户" description="调用 iszy-api 的 POST /user 创建后台用户。">
+          <UModal v-model:open="createOpen" title="新增用户" description="创建一个可登录后台的用户。">
             <UButton label="新增用户" icon="i-lucide-user-plus" />
 
             <template #body>
@@ -367,115 +362,96 @@ function isSameRole(role: RawRole, userRole: RawRole) {
         </div>
       </div>
 
-      <UPageCard variant="subtle" :ui="{ container: 'p-0 sm:p-0 gap-y-0' }">
-        <div class="overflow-x-auto">
-          <table class="w-full min-w-[58rem] text-sm">
-            <thead class="bg-elevated/50 text-muted">
-              <tr>
-                <th class="px-4 py-3 text-left font-medium">
-                  用户
-                </th>
-                <th class="px-4 py-3 text-left font-medium">
-                  联系方式
-                </th>
-                <th class="px-4 py-3 text-left font-medium">
-                  角色
-                </th>
-                <th class="px-4 py-3 text-left font-medium">
-                  状态
-                </th>
-                <th class="px-4 py-3 text-right font-medium">
-                  操作
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-default">
-              <tr v-if="status === 'pending'">
-                <td colspan="5" class="px-4 py-10 text-center text-muted">
-                  加载用户中...
-                </td>
-              </tr>
-              <tr v-else-if="!filteredUsers.length">
-                <td colspan="5" class="px-4 py-10 text-center text-muted">
-                  暂无匹配用户
-                </td>
-              </tr>
-              <tr v-for="user in filteredUsers" v-else :key="user.userId">
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-3">
-                    <UAvatar :alt="user.nickName || user.userName" size="md" />
-                    <div class="min-w-0">
-                      <p class="truncate font-medium text-highlighted">
-                        {{ user.nickName || user.userName }}
-                      </p>
-                      <p class="truncate text-muted">
-                        #{{ user.userId }} · {{ user.userName }}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-4 py-3 text-muted">
-                  <div class="space-y-1">
-                    <p>{{ user.email || '未绑定邮箱' }}</p>
-                    <p>{{ user.mobile || '未绑定手机号' }}</p>
-                  </div>
-                </td>
-                <td class="px-4 py-3">
-                  <UBadge color="neutral" variant="subtle">
-                    点击分配角色查看
-                  </UBadge>
-                </td>
-                <td class="px-4 py-3">
-                  <UBadge :color="statusMeta[user.status as UserStatus].color" variant="subtle">
-                    {{ statusMeta[user.status as UserStatus].label }}
-                  </UBadge>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex justify-end gap-1">
-                    <UTooltip text="激活用户">
-                      <UButton
-                        icon="i-lucide-check-circle"
-                        color="neutral"
-                        variant="ghost"
-                        square
-                        :disabled="user.status === UserStatus.ENABLED"
-                        @click="activateUser(user)"
-                      />
-                    </UTooltip>
-                    <UTooltip text="禁用用户">
-                      <UButton
-                        icon="i-lucide-ban"
-                        color="warning"
-                        variant="ghost"
-                        square
-                        :disabled="user.status === UserStatus.DISABLED"
-                        @click="banUser(user)"
-                      />
-                    </UTooltip>
-                    <UTooltip text="分配角色">
-                      <UButton
-                        icon="i-lucide-shield-plus"
-                        color="neutral"
-                        variant="ghost"
-                        square
-                        @click="requestAssignRoles(user)"
-                      />
-                    </UTooltip>
-                    <UTooltip text="删除用户">
-                      <UButton
-                        icon="i-lucide-trash"
-                        color="error"
-                        variant="ghost"
-                        square
-                        @click="requestRemoveUser(user)"
-                      />
-                    </UTooltip>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+      <UPageCard class="min-w-0" variant="subtle" :ui="{ container: 'min-w-0 p-0 sm:p-0 gap-y-0', body: 'min-w-0' }">
+        <UTable
+          :data="filteredUsers"
+          :columns="userColumns"
+          :loading="status === 'pending'"
+          :ui="{
+            root: 'max-w-full',
+            base: 'min-w-[58rem]',
+            thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
+            tbody: '[&>tr]:last:[&>td]:border-b-0',
+            th: 'text-center',
+            td: 'align-middle border-b border-default',
+            separator: 'h-0',
+          }"
+        >
+          <template #empty>
+            暂无匹配用户
+          </template>
+
+          <template #userId-cell="{ row }">
+            #{{ row.original.userId }}
+          </template>
+
+          <template #user-cell="{ row }">
+            <div class="flex items-center gap-3">
+              <UAvatar :alt="row.original.nickName || row.original.userName" size="md" />
+              <div class="min-w-0">
+                <p class="truncate font-medium text-highlighted">
+                  {{ row.original.nickName || row.original.userName }}
+                </p>
+              </div>
+            </div>
+          </template>
+
+          <template #contact-cell="{ row }">
+            <div class="space-y-1">
+              <p>{{ row.original.email || '未绑定邮箱' }}</p>
+              <p>{{ row.original.mobile || '未绑定手机号' }}</p>
+            </div>
+          </template>
+
+          <template #status-cell="{ row }">
+            <UBadge :color="statusMeta[row.original.status as UserStatus].color" variant="subtle">
+              {{ statusMeta[row.original.status as UserStatus].label }}
+            </UBadge>
+          </template>
+
+          <template #actions-cell="{ row }">
+            <div class="flex flex-wrap justify-end gap-2">
+              <UTooltip text="激活用户">
+                <UButton
+                  label="激活"
+                  icon="i-lucide-check-circle"
+                  color="neutral"
+                  variant="ghost"
+                  :disabled="row.original.status === UserStatus.ENABLED"
+                  @click="activateUser(row.original)"
+                />
+              </UTooltip>
+              <UTooltip text="禁用用户">
+                <UButton
+                  label="禁用"
+                  icon="i-lucide-ban"
+                  color="warning"
+                  variant="ghost"
+                  :disabled="row.original.status === UserStatus.DISABLED"
+                  @click="banUser(row.original)"
+                />
+              </UTooltip>
+              <UTooltip text="分配角色">
+                <UButton
+                  label="角色"
+                  icon="i-lucide-shield-plus"
+                  color="neutral"
+                  variant="ghost"
+                  @click="requestAssignRoles(row.original)"
+                />
+              </UTooltip>
+              <UTooltip text="删除用户">
+                <UButton
+                  label="删除"
+                  icon="i-lucide-trash"
+                  color="error"
+                  variant="ghost"
+                  @click="requestRemoveUser(row.original)"
+                />
+              </UTooltip>
+            </div>
+          </template>
+        </UTable>
       </UPageCard>
 
       <UModal
@@ -515,66 +491,26 @@ function isSameRole(role: RawRole, userRole: RawRole) {
       <UModal
         v-model:open="roleOpen"
         title="分配角色"
-        description="调用 PUT /user/:id/roles 替换该用户的完整角色集合。"
+        description="为该用户选择角色集合。"
       >
         <template #body>
           <div class="space-y-4">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <UInput
-                v-model="roleQuery"
-                icon="i-lucide-search"
-                placeholder="搜索角色名称、标识或说明"
-                class="w-full sm:max-w-xs"
+            <UFormField label="角色集合" name="roles">
+              <USelectMenu
+                v-model="selectedRoleModel"
+                multiple
+                value-key="id"
+                :items="roleOptions"
+                :loading="roleDetailLoading"
+                :search-input="{ placeholder: '搜索角色', icon: 'i-lucide-search' }"
+                placeholder="选择角色"
+                class="w-full"
               />
-              <span class="text-sm text-muted">
-                已选 {{ selectedRoleIds.length }} 个角色
-              </span>
-            </div>
+            </UFormField>
 
-            <div v-if="roleDetailLoading" class="rounded-md border border-dashed border-default px-4 py-8 text-center text-sm text-muted">
-              加载用户角色中...
-            </div>
-
-            <div v-else class="max-h-80 overflow-y-auto pr-1">
-              <div v-if="!filteredRoles.length" class="rounded-md border border-dashed border-default px-4 py-8 text-center text-sm text-muted">
-                暂无匹配角色
-              </div>
-
-              <div v-else class="grid gap-2 sm:grid-cols-2">
-                <label
-                  v-for="role in filteredRoles"
-                  :key="role.id || role.name"
-                  class="flex items-start gap-2 rounded-md border border-default p-3"
-                  :class="isRequiredRole(role) ? 'cursor-not-allowed bg-muted/30' : 'cursor-pointer'"
-                >
-                  <UCheckbox
-                    :model-value="selectedRoleIds.includes(role.id!) || isRequiredRole(role)"
-                    :disabled="isRequiredRole(role)"
-                    @update:model-value="toggleSelectedRole(role.id, $event)"
-                  />
-                  <span class="min-w-0">
-                    <span class="flex items-center gap-2 text-sm font-medium text-highlighted">
-                      <span>{{ role.alias || role.name }}</span>
-                      <UBadge
-                        v-if="isRequiredRole(role)"
-                        color="neutral"
-                        variant="subtle"
-                        size="sm"
-                      >
-                        默认角色
-                      </UBadge>
-                    </span>
-                    <span class="block truncate text-xs text-muted">{{ role.name }}</span>
-                    <span
-                      class="mt-1 block min-h-4 truncate text-xs text-muted"
-                      :title="role.desc || undefined"
-                    >
-                      {{ isRequiredRole(role) ? '注册用户为系统默认角色，不可取消绑定。' : role.desc || '' }}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            </div>
+            <p v-if="defaultRoleIds.length" class="text-sm text-muted">
+              默认角色会自动保留。
+            </p>
 
             <div class="flex justify-end gap-2">
               <UButton

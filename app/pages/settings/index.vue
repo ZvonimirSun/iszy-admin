@@ -11,7 +11,7 @@ const siteItems = computed(() => [{
   label: '站点地址',
   value: config.url || '未配置',
 }, {
-  label: '后端接口源',
+  label: '服务地址',
   value: config.apiOrigin || '未配置',
 }, {
   label: '开放注册',
@@ -39,7 +39,7 @@ const assetItems = computed(() => [{
 <template>
   <UPageCard
     title="运行配置"
-    description="当前后台只展示站点配置状态，配置修改请通过 Nuxt runtimeConfig 或部署环境变量完成。"
+    description="当前后台只展示站点配置状态，配置修改请通过部署配置完成。"
     variant="naked"
   />
 
@@ -53,7 +53,7 @@ const assetItems = computed(() => [{
 
   <UPageCard
     title="站点配置"
-    description="来自 runtimeConfig.public 的基础站点信息。"
+    description="基础站点信息与服务连接配置。"
     variant="subtle"
     :ui="{ container: 'divide-y divide-default gap-y-0' }"
   >

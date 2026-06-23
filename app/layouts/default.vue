@@ -27,6 +27,13 @@ const links = [{
     open.value = false
   },
 }, {
+  label: '用户组管理',
+  icon: 'i-lucide-panels-top-left',
+  to: '/groups',
+  onSelect: () => {
+    open.value = false
+  },
+}, {
   label: '权限管理',
   icon: 'i-lucide-key-round',
   to: '/permissions',

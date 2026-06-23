@@ -7,6 +7,7 @@ function _useDashboard() {
     'g-h': () => router.push('/'),
     'g-u': () => router.push('/users'),
     'g-r': () => router.push('/roles'),
+    'g-g': () => router.push('/groups'),
     'g-p': () => router.push('/permissions'),
     'g-s': () => router.push('/settings'),
   })
