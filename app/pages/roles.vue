@@ -3,6 +3,10 @@ import type { PublicUser, RawPrivilege, RawRole, ResultDto } from '@zvonimirsun/
 
 const toast = useToast()
 
+type RoleWithSystemFlags = RawRole & {
+  isBuiltIn?: boolean
+}
+
 const q = ref('')
 const createOpen = ref(false)
 const editOpen = ref(false)
@@ -55,6 +59,10 @@ function openCreateRole() {
 }
 
 function openEditRole(role: RawRole) {
+  if (guardBuiltInRole(role, '编辑')) {
+    return
+  }
+
   selectedRole.value = role
   roleForm.name = role.name
   roleForm.alias = role.alias
@@ -69,6 +77,10 @@ function openPrivilegeEditor(role: RawRole) {
 }
 
 function openDeleteRole(role: RawRole) {
+  if (guardBuiltInRole(role, '删除')) {
+    return
+  }
+
   selectedRole.value = role
   deleteOpen.value = true
 }
@@ -87,6 +99,10 @@ async function submitCreateRole() {
 
 async function submitEditRole() {
   if (!selectedRole.value?.id) {
+    return
+  }
+  if (guardBuiltInRole(selectedRole.value, '编辑')) {
+    editOpen.value = false
     return
   }
 
@@ -123,6 +139,10 @@ async function confirmDeleteRole() {
   if (!selectedRole.value?.id) {
     return
   }
+  if (guardBuiltInRole(selectedRole.value, '删除')) {
+    deleteOpen.value = false
+    return
+  }
 
   const res = await $fetch<ResultDto<boolean>>(`/api/roles/${selectedRole.value.id}`, {
     method: 'DELETE',
@@ -147,6 +167,23 @@ function togglePrivilege(privilegeId: number | undefined, checked: boolean | 'in
   if (!checked) {
     selectedPrivilegeIds.value = selectedPrivilegeIds.value.filter(id => id !== privilegeId)
   }
+}
+
+function isBuiltInRole(role: RawRole): role is RoleWithSystemFlags {
+  return (role as RoleWithSystemFlags).isBuiltIn === true
+}
+
+function guardBuiltInRole(role: RawRole, action: string) {
+  if (!isBuiltInRole(role)) {
+    return false
+  }
+
+  toast.add({
+    title: `内置角色不可${action}`,
+    description: '该角色由系统初始化逻辑维护，不能在前端修改。',
+    color: 'warning',
+  })
+  return true
 }
 
 function normalizeRoleForm() {
@@ -218,6 +255,9 @@ function privilegeLabel(privilege: RawPrivilege) {
               <UBadge color="neutral" variant="subtle">
                 {{ role.name }}
               </UBadge>
+              <UBadge v-if="isBuiltInRole(role)" color="neutral" variant="outline">
+                内置角色
+              </UBadge>
               <UBadge color="primary" variant="subtle">
                 {{ userCount(role) }} 名用户
               </UBadge>
@@ -244,14 +284,20 @@ function privilegeLabel(privilege: RawPrivilege) {
           <template #footer>
             <div class="flex justify-end gap-2">
               <UButton
+                v-if="!isBuiltInRole(role)"
                 label="编辑"
                 icon="i-lucide-pencil"
                 color="neutral"
                 variant="subtle"
                 @click="openEditRole(role)"
               />
-              <UButton label="授权" icon="i-lucide-key-round" @click="openPrivilegeEditor(role)" />
               <UButton
+                label="授权"
+                icon="i-lucide-key-round"
+                @click="openPrivilegeEditor(role)"
+              />
+              <UButton
+                v-if="!isBuiltInRole(role)"
                 label="删除"
                 icon="i-lucide-trash"
                 color="error"

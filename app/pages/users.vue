@@ -4,6 +4,10 @@ import { UserStatus } from '@zvonimirsun/iszy-common'
 
 const toast = useToast()
 
+type RoleWithSystemFlags = RawRole & {
+  isDefault?: boolean
+}
+
 const q = ref('')
 const statusFilter = ref<'all' | UserStatus>('all')
 const createOpen = ref(false)
@@ -61,6 +65,10 @@ const { data: rolesResult } = await useFetch<ResultDto<RawRole[]>>('/api/roles',
 
 const users = computed(() => data.value.data ?? [])
 const roles = computed(() => rolesResult.value.data ?? [])
+const defaultRoleIds = computed(() => roles.value
+  .filter(isDefaultRole)
+  .map(role => role.id)
+  .filter((id): id is number => id != null))
 
 const filteredRoles = computed(() => {
   const keyword = roleQuery.value.trim().toLowerCase()
@@ -137,10 +145,10 @@ async function requestAssignRoles(user: PublicUser) {
     }
 
     userToAssignRoles.value = res.data
-    selectedRoleIds.value = roles.value
+    selectedRoleIds.value = withDefaultRoleIds(roles.value
       .filter(role => res.data?.roles?.some(userRole => isSameRole(role, userRole)))
       .map(role => role.id)
-      .filter((id): id is number => id != null)
+      .filter((id): id is number => id != null))
   }
   finally {
     roleDetailLoading.value = false
@@ -157,7 +165,7 @@ async function confirmAssignRoles() {
     const res = await $fetch<ResultDto<PublicUser>>(`/api/user/${userToAssignRoles.value.userId}/roles`, {
       method: 'PUT',
       body: {
-        roleIds: selectedRoleIds.value,
+        roleIds: withDefaultRoleIds(selectedRoleIds.value),
       },
     })
 
@@ -212,6 +220,10 @@ function toggleSelectedRole(roleId: number | undefined, checked: boolean | 'inde
     return
   }
 
+  if (!checked && defaultRoleIds.value.includes(roleId)) {
+    return
+  }
+
   if (checked && !selectedRoleIds.value.includes(roleId)) {
     selectedRoleIds.value.push(roleId)
     return
@@ -220,6 +232,18 @@ function toggleSelectedRole(roleId: number | undefined, checked: boolean | 'inde
   if (!checked) {
     selectedRoleIds.value = selectedRoleIds.value.filter(id => id !== roleId)
   }
+}
+
+function withDefaultRoleIds(roleIds: number[]) {
+  return Array.from(new Set([...roleIds, ...defaultRoleIds.value]))
+}
+
+function isRequiredRole(role: RawRole) {
+  return role.id != null && defaultRoleIds.value.includes(role.id)
+}
+
+function isDefaultRole(role: RawRole): role is RoleWithSystemFlags {
+  return (role as RoleWithSystemFlags).isDefault === true
 }
 
 async function updateUserStatus(user: PublicUser, action: 'activate' | 'ban') {
@@ -520,20 +544,32 @@ function isSameRole(role: RawRole, userRole: RawRole) {
                 <label
                   v-for="role in filteredRoles"
                   :key="role.id || role.name"
-                  class="flex cursor-pointer items-start gap-2 rounded-md border border-default p-3"
+                  class="flex items-start gap-2 rounded-md border border-default p-3"
+                  :class="isRequiredRole(role) ? 'cursor-not-allowed bg-muted/30' : 'cursor-pointer'"
                 >
                   <UCheckbox
-                    :model-value="selectedRoleIds.includes(role.id!)"
+                    :model-value="selectedRoleIds.includes(role.id!) || isRequiredRole(role)"
+                    :disabled="isRequiredRole(role)"
                     @update:model-value="toggleSelectedRole(role.id, $event)"
                   />
                   <span class="min-w-0">
-                    <span class="block text-sm font-medium text-highlighted">{{ role.alias || role.name }}</span>
+                    <span class="flex items-center gap-2 text-sm font-medium text-highlighted">
+                      <span>{{ role.alias || role.name }}</span>
+                      <UBadge
+                        v-if="isRequiredRole(role)"
+                        color="neutral"
+                        variant="subtle"
+                        size="sm"
+                      >
+                        默认角色
+                      </UBadge>
+                    </span>
                     <span class="block truncate text-xs text-muted">{{ role.name }}</span>
                     <span
                       class="mt-1 block min-h-4 truncate text-xs text-muted"
                       :title="role.desc || undefined"
                     >
-                      {{ role.desc || '' }}
+                      {{ isRequiredRole(role) ? '注册用户为系统默认角色，不可取消绑定。' : role.desc || '' }}
                     </span>
                   </span>
                 </label>
